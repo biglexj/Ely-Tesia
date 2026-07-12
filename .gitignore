@@ -1,0 +1,49 @@
+# Release artifacts
+/release/
+
+# Gradle and Kotlin build output
+.gradle/
+.kotlin/
+**/build/
+build/
+
+# Local SDK and machine configuration
+local.properties
+*.local
+
+# IntelliJ IDEA / Android Studio
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# Visual Studio Code
+.vscode/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs and crash dumps
+*.log
+*.hprof
+hs_err_pid*
+
+# Temporary files
+tmp/
+*.tmp
+*.temp
+*.bak
+*~
+
+# Generated demo MIDI
+/demo_escala.mid
+
+# Signing credentials and private keys
+*.jks
+*.keystore
+*.p12
+*.pem
+keystore.properties
