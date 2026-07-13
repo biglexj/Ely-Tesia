@@ -74,6 +74,7 @@ compose.desktop {
             )
             packageName = "ElyTesia"
             packageVersion = "1.0.1"
+            vendor = "biglexj"
 
             windows {
                 iconFile.set(project.file("src/desktopMain/resources/elytesia.ico"))
