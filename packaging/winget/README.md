@@ -1,7 +1,7 @@
 # Publicación en WinGet
 
-Los manifiestos de la versión 1.0.1 están en
-`manifests/b/biglexj/ElyTesia/1.0.1` y utilizan el instalador MSI publicado en
+Los manifiestos de la versión 1.0.2 están en
+`manifests/b/biglexj/ElyTesia/1.0.2` y utilizan el instalador MSI publicado en
 GitHub Releases.
 
 Recomendación para Ely-Tesia:

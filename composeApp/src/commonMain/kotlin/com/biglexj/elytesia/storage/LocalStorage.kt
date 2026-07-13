@@ -21,6 +21,7 @@ data class SavedAppState(
     val noteLabelMode: String = "NONE",
     val selectedAudioDevice: String = "Sistema (Predeterminado)",
     val selectedSongName: String? = null,
+    val selectedInstrument: String = "PIANO_ACUSTICO",
     val songs: List<Song> = emptyList()
 )
 
@@ -32,6 +33,7 @@ object AppStateCodec {
         appendLine("labels=${state.noteLabelMode}")
         appendLine("audio=${escape(state.selectedAudioDevice)}")
         appendLine("selected=${escape(state.selectedSongName.orEmpty())}")
+        appendLine("instrument=${state.selectedInstrument}")
         state.songs.forEach { song ->
             val notes = song.notes.joinToString(";") {
                 "${it.pitch},${it.startTimeMs},${it.durationMs},${it.velocity},${it.track}"
@@ -73,6 +75,8 @@ object AppStateCodec {
                     ?.removePrefix("audio=")?.let(::unescape) ?: "Sistema (Predeterminado)",
                 selectedSongName = lines.firstOrNull { it.startsWith("selected=") }
                     ?.removePrefix("selected=")?.let(::unescape)?.ifBlank { null },
+                selectedInstrument = lines.firstOrNull { it.startsWith("instrument=") }
+                    ?.removePrefix("instrument=") ?: "PIANO_ACUSTICO",
                 songs = songs
             )
         }.getOrNull()

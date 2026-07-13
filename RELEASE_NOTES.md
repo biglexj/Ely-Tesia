@@ -1,70 +1,49 @@
-# Ely-Tesia 1.0.1
+# 🚀 Ely-Tesia - Historial de Versiones
+📌 **Versión actual: `1.0.2` · Versión mínima requerida: `1.0.0`**
 
-Actualización de estabilidad centrada en la correspondencia entre el piano
-roll, el teclado MIDI y los colores de interpretación.
+> [!IMPORTANT]
+> **Regla del .9 para Versionado:**
+> - Nunca se debe pasar de una versión de parche `.9` (ej. de `1.0.9` no se pasa a `1.0.10`). Al alcanzar el límite del parche `.9`, se incrementa el número menor/secundario (ej. pasando a `1.1.0`).
+> - De igual manera, al alcanzar el límite de la versión menor `1.9.9` (o ante hitos de arquitectura significativos posteriores a `1.9.x`), se debe saltar obligatoriamente al siguiente número mayor completo, pasando a **`2.0.0`**. No se permiten números como `1.9.10` o `1.10.x`.
+> - **Nombres de Dulces para Versiones Mayores:** Cada versión mayor (ej. `1.0.0`, `2.0.0`) debe nombrarse con un nombre de dulce o postre al estilo de las versiones clásicas de Android en orden alfabético (ej. `v1.0.0 (Apple Pie Update)`, `v2.0.0 (Banana Bread Update)`). Este nombre debe quedar reflejado de manera coordinada en el título de `README.md`, en `RELEASE_NOTES.md` al documentar la release, y en los archivos de configuración del proyecto.
 
-## Novedades y correcciones
+### 🚀 v1.0.2 — **"Banco de Instrumentos y Silenciado MIDI Local" (patch)** (12/07/2026)
 
-- Visualización de notas MIDI mediante un piano roll animado.
-- Teclado virtual de 88 teclas con rango configurable.
-- Entrada MIDI física en Windows y Android.
-- Teclados Android USB/OTG y Bluetooth MIDI.
-- Importación y exportación mediante el selector nativo de Android.
-- Sintetizador interno, metrónomo y modo de espera en ambas plataformas.
-- Controles de reproducción, BPM, reinicio y bucle.
-- Barra de progreso y biblioteca persistente.
-- Importación de canciones MIDI en Windows.
-- Grabación con velocidad y duración de las notas.
-- Cuenta previa de cero, uno o dos compases.
-- Reproducción, renombrado y exportación MIDI de las tomas.
-- Pedal sustain CC64 conservado al grabar, reproducir y exportar.
-- Diseños independientes para escritorio y teléfonos.
-- Instalador MSI y APK de prueba.
-- Nuevo icono oficial de Ely-Tesia.
-- Correspondencia de colores por pista entre barras, partículas y teclas.
-- Sostenidos y bemoles iluminados en rosa.
-- Errores indicados en ámbar, sin utilizar rojo.
-- El color de una pulsación permanece fijado hasta soltar la tecla.
-- Resolución estable cuando varias pistas mantienen el mismo tono.
-- Corrección del sintetizador virtual y de la selección de audio en Windows.
-- Persistencia de biblioteca y preferencias fuera de la instalación, con
-  migración del estado anterior.
-- Paquete MSIX para Windows.
+Esta actualización incorpora mejoras visuales de control y añade soporte para diversidad instrumental en el sintetizador. Se integró un banco inicial de 7 instrumentos (Piano Acústico, Piano Eléctrico, Órgano, Sintetizador Pad, Clavecín, Flauta y Bajo Sintetizado) seleccionables directamente desde la interfaz. 
 
-## Correcciones incluidas
+Para mejorar la interacción con teclados físicos, se implementó el envío automático del mensaje MIDI "Local Control Off" (CC 122) al conectar un dispositivo, lo que desactiva los altavoces internos del teclado compatible para escuchar únicamente la salida virtual generada por el software. También se optimizó la compatibilidad de audio estéreo en Little Endian y se corrigieron detalles visuales en los selectores y menús deslizantes.
 
-- Eliminación de notas duplicadas y reinicios accidentales del audio.
-- Corrección del recorte visual de notas largas al entrar en pantalla.
-- Reducción de chirridos, aliasing y distorsión del sintetizador.
-- Espaciado y bordes uniformes en el teclado y los controles.
-- Distribución responsive para pantallas móviles.
-- Persistencia del rango MIDI, canciones y preferencias.
+**Archivos y Paquetes:**
+- `ElyTesia-Windows-1.0.2.msi`
+- `ElyTesia-Windows-1.0.2.exe`
+- `ElyTesia-Windows-1.0.2.msix`
+- `ElyTesia-Android-1.0.2-debug.apk`
+- `SHA256SUMS.txt`
 
-## Limitaciones conocidas
+---
 
-- El APK 1.0.0 está firmado como compilación `debug`; Google Play requerirá un
-  AAB release y una clave de firma permanente.
-- La latencia y compatibilidad MIDI pueden variar según el fabricante, la
-  conexión USB/Bluetooth y las capacidades de audio del dispositivo Android.
-- Los controladores MIDI distintos de sustain CC64 todavía no tienen acciones
-  específicas dentro del sintetizador.
-- La separación manual por pistas/manos y el bucle A-B están planificados para
-  versiones posteriores.
+### 🚀 v1.0.1 — **"Correspondencia Visual de Notas y Estabilidad de Sintetizador" (patch)** (12/07/2026)
 
-## Archivos de la versión 1.0.1
+Primera actualización de parche de Ely-Tesia centrada en la correspondencia visual entre el piano roll, las teclas y la interpretación del usuario. Se mejoró la sincronización temporal eliminando el adelanto visual de 120 ms entre la llegada de una nota y la iluminación del teclado. Además, las teclas blancas conservan ahora el color asignado de su pista activa (verde, violeta o crema), mientras que las teclas negras se iluminan en rosa para denotar sostenidos y bemoles. Las pulsaciones correctas retienen el color original de la nota y las incorrectas se muestran en un destello ámbar dorado con una tolerancia temporal de 180 ms para evitar penalizaciones injustas. El color permanece fijo durante toda la pulsación de la tecla y se resolvió el conflicto cuando dos pistas sostienen el mismo tono de forma simultánea.
 
+En la plataforma Windows, se corrigió la salida de audio virtual al alternar dispositivos de salida y se unificó la instancia del gestor MIDI y el sintetizador para evitar problemas durante la recomposición de la interfaz. Los datos de la biblioteca local, grabaciones y preferencias ahora se guardan de forma externa en `%APPDATA%\Ely-Tesia` para asegurar que una actualización del software no elimine el estado previo del usuario, realizando una migración automática si está disponible. Finalmente, se añade soporte para el empaquetado y distribución en formato MSIX.
+
+**Archivos y Paquetes:**
 - `ElyTesia-Windows-1.0.1.msi`
 - `ElyTesia-Windows-1.0.1.exe`
 - `ElyTesia-Windows-1.0.1.msix`
 - `ElyTesia-Android-1.0.1-debug.apk`
 - `SHA256SUMS.txt`
 
-## Actualización e instalación
+> [!NOTE]
+> **Actualización e instalación:** Si existe una compilación experimental anterior de Windows con la misma versión interna, se recomienda desinstalarla antes de instalar este MSI. Las versiones futuras conservarán la identidad de actualización configurada.
+>
+> **Licencia:** Publicado bajo la licencia MIT.
 
-Si existe una compilación experimental anterior de Windows con la misma
-versión interna, se recomienda desinstalarla antes de instalar este MSI.
-Las versiones futuras conservarán la identidad de actualización configurada.
+---
 
-## Licencia
+### 🚀 v1.0.0 — **"Lanzamiento Inicial de Ely-Tesia" (Apple Pie Update) (major)** (12/07/2026)
 
-Ely-Tesia 1.0.1 se publica bajo la licencia MIT.
+Lanzamiento inicial de Ely-Tesia como una herramienta de visualización y práctica MIDI multiplataforma para Windows y Android. El sistema incorpora un piano roll animado tridimensional con un teclado interactivo de 88 teclas personalizable. Permite la entrada de dispositivos MIDI físicos a través de USB/OTG y Bluetooth (en Android) y la API multimedia nativa de Windows, integrando un sintetizador de software interno de baja latencia con metrónomo y controles de reproducción (BPM, bucle, pausa y reinicio).
+
+El flujo de práctica soporta la grabación en tiempo real conservando velocidad, duración y eventos del pedal de sustain (CC64), respaldado por una cuenta previa configurable. La interfaz es adaptativa para pantallas de escritorio y teléfonos móviles. Las canciones y tomas grabadas pueden renombrarse, reproducirse y exportarse directamente en formato MIDI. El instalador oficial se distribuye mediante paquetes MSI para Windows y archivos APK compilados de depuración para Android.

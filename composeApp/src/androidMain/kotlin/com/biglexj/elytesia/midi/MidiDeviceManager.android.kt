@@ -119,6 +119,7 @@ class AndroidMidiDeviceManager(context: Context) : MidiDeviceManager {
     private var openedPort: MidiOutputPort? = null
     private val synth = AndroidSoftwareSynth()
     @Volatile private var internalSound = true
+    private var currentInstrument = InstrumentType.PIANO_ACUSTICO
 
     private data class DevicePort(val label: String, val info: MidiDeviceInfo, val portNumber: Int)
 
@@ -184,6 +185,12 @@ class AndroidMidiDeviceManager(context: Context) : MidiDeviceManager {
     override fun getAudioOutputs(): List<String> = listOf("Sistema (Android)")
     override fun selectAudioOutput(name: String) = Unit
 
+    override fun selectInstrument(instrument: InstrumentType) {
+        currentInstrument = instrument
+    }
+
+    override fun getInstrument(): InstrumentType = currentInstrument
+
     private class AndroidNoteReceiver(
         private val onNoteOn: (Int, Int) -> Unit,
         private val onNoteOff: (Int) -> Unit,
@@ -241,6 +248,8 @@ private class UnavailableAndroidMidiDeviceManager : MidiDeviceManager {
     override fun setInternalSoundEnabled(enabled: Boolean) = Unit
     override fun getAudioOutputs() = emptyList<String>()
     override fun selectAudioOutput(name: String) = Unit
+    override fun selectInstrument(instrument: InstrumentType) = Unit
+    override fun getInstrument(): InstrumentType = InstrumentType.PIANO_ACUSTICO
 }
 
 actual fun getPlatformMidiDeviceManager(): MidiDeviceManager = UnavailableAndroidMidiDeviceManager()

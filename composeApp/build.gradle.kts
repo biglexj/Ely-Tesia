@@ -54,8 +54,8 @@ android {
         applicationId = "com.biglexj.elytesia"
         minSdk = 24
         targetSdk = 34
-        versionCode = 2
-        versionName = "1.0.1"
+        versionCode = 3
+        versionName = "1.0.2"
     }
     
     compileOptions {
@@ -73,13 +73,13 @@ compose.desktop {
                 org.jetbrains.compose.desktop.application.dsl.TargetFormat.Exe
             )
             packageName = "ElyTesia"
-            packageVersion = "1.0.1"
+            packageVersion = "1.0.2"
             vendor = "biglexj"
 
             windows {
                 iconFile.set(project.file("src/desktopMain/resources/elytesia.ico"))
-                msiPackageVersion = "1.0.1"
-                exePackageVersion = "1.0.1"
+                msiPackageVersion = "1.0.2"
+                exePackageVersion = "1.0.2"
                 upgradeUuid = "28da0bdd-0ec9-3096-9fe8-2c59b53ec0ab"
                 shortcut = true
                 menu = true

@@ -46,6 +46,15 @@ Estado: **Completado**
 - Persistencia y migración segura de la biblioteca entre actualizaciones.
 - Empaquetado MSIX para Windows.
 
+## Versión 1.0.2
+
+Estado: **Completado**
+
+- Incorporación de un banco de instrumentos inicial (Piano Acústico, Piano Eléctrico, Órgano, Sintetizador Pad, Clavecín, Flauta y Bajo Sintetizado).
+- Correcciones de diseño visual en selectores y componentes de control.
+- Envío automático de comando MIDI "Local Control: OFF" para silenciar las bocinas internas de los teclados físicos conectados.
+- Soporte para audio estéreo real de 16 bits en Little Endian para compatibilidad total con auriculares Bluetooth/USB.
+
 ## Próxima actualización - Estabilización
 
 Estado: **Planificado**

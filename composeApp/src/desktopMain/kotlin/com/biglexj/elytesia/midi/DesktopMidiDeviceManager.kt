@@ -6,9 +6,10 @@ import kotlin.math.sin
 import kotlin.math.PI
 import kotlin.math.sqrt
 import kotlin.math.tanh
+import kotlin.math.exp
 import kotlin.concurrent.thread
 
-// Sintetizador de Software Polyfónico de baja latencia para OpenJDK / JBR
+// Sintetizador de Software Polifónico de baja latencia para OpenJDK / JBR con 10 Instrumentos
 class SimpleSoftwareSynth {
     private val SAMPLE_RATE = 44100f
     @Volatile private var line: SourceDataLine? = null
@@ -19,7 +20,7 @@ class SimpleSoftwareSynth {
     private var synthThread: Thread? = null
     private var selectedMixerName = "Sistema (Predeterminado)"
 
-    class ActiveNote(val pitch: Int, val frequency: Double, val velocity: Int) {
+    class ActiveNote(val pitch: Int, val frequency: Double, val velocity: Int, val instrument: InstrumentType) {
         var phase = 0.0
         var amplitude = 0.0
         var ageSamples = 0L
@@ -31,38 +32,103 @@ class SimpleSoftwareSynth {
             ageSamples += samples
             if (pitch == -1) {
                 val sec = ageSamples.toDouble() / 44100.0
-                amplitude = (1.0 - (sec / 0.05)).coerceAtLeast(0.0) * 0.08
-            } else if (isReleased) {
+                amplitude = (1.0 - (sec / 0.05)).coerceAtLeast(0.0) * 0.18
+                return
+            }
+            
+            val sec = ageSamples.toDouble() / 44100.0
+            
+            if (isReleased) {
                 releaseSamples += samples
                 val releaseSec = releaseSamples.toDouble() / 44100.0
-                // Desvanecimiento rápido para evitar clicks/pops (0.12 segundos)
-                val releaseFactor = (1.0 - (releaseSec / 0.12)).coerceAtLeast(0.0)
+                
+                val releaseTime = when (instrument) {
+                    InstrumentType.SINTETIZADOR_PAD -> 0.45 // Colchón de liberación lenta
+                    InstrumentType.SAXOFON, InstrumentType.MELODICA, InstrumentType.ORGANO, InstrumentType.FLAUTA -> 0.07 // Parada rápida de aire
+                    else -> 0.12 // Decaimiento estándar de cuerda/barra
+                }
+                val releaseFactor = (1.0 - (releaseSec / releaseTime)).coerceAtLeast(0.0)
                 amplitude = releaseAmplitude * releaseFactor
             } else {
-                val sec = ageSamples.toDouble() / 44100.0
-                // Decaimiento natural de piano (2.5 segundos)
-                val attack = (sec / 0.012).coerceIn(0.0, 1.0)
-                val decay = (1.0 - (sec / 2.5)).coerceAtLeast(0.0)
-                amplitude = attack * decay * (velocity / 127.0) * 0.18
+                when (instrument) {
+                    InstrumentType.PIANO_ACUSTICO -> {
+                        val attack = (sec / 0.008).coerceIn(0.0, 1.0)
+                        val decay = exp(-0.8 * sec)
+                        amplitude = attack * decay * (velocity / 127.0) * 0.38
+                    }
+                    InstrumentType.PIANO_ELECTRICO -> {
+                        val attack = (sec / 0.005).coerceIn(0.0, 1.0)
+                        val decay = exp(-0.9 * sec)
+                        amplitude = attack * decay * (velocity / 127.0) * 0.42
+                    }
+                    InstrumentType.XILOFONO -> {
+                        val attack = (sec / 0.001).coerceIn(0.0, 1.0) // Ataque percusivo instantáneo
+                        val decay = exp(-4.5 * sec) // Decaimiento súper rápido de bloque de madera
+                        amplitude = attack * decay * (velocity / 127.0) * 0.45
+                    }
+                    InstrumentType.SAXOFON -> {
+                        val attack = (sec / 0.045).coerceIn(0.0, 1.0) // Ataque de aire lento
+                        val sustain = 1.0
+                        amplitude = attack * sustain * (velocity / 127.0) * 0.26
+                    }
+                    InstrumentType.MELODICA -> {
+                        val attack = (sec / 0.015).coerceIn(0.0, 1.0)
+                        val sustain = 1.0
+                        amplitude = attack * sustain * (velocity / 127.0) * 0.28
+                    }
+                    InstrumentType.ORGANO -> {
+                        val attack = (sec / 0.015).coerceIn(0.0, 1.0)
+                        val sustain = 1.0
+                        amplitude = attack * sustain * (velocity / 127.0) * 0.22
+                    }
+                    InstrumentType.SINTETIZADOR_PAD -> {
+                        val attack = (sec / 0.25).coerceIn(0.0, 1.0) // Ataque lento
+                        val sustain = 1.0
+                        amplitude = attack * sustain * (velocity / 127.0) * 0.35
+                    }
+                    InstrumentType.CLAVECIN -> {
+                        val attack = (sec / 0.002).coerceIn(0.0, 1.0)
+                        val decay = exp(-2.2 * sec) // Cuerda pulsada rápida
+                        amplitude = attack * decay * (velocity / 127.0) * 0.36
+                    }
+                    InstrumentType.FLAUTA -> {
+                        val attack = (sec / 0.04).coerceIn(0.0, 1.0)
+                        val sustain = 1.0
+                        amplitude = attack * sustain * (velocity / 127.0) * 0.35
+                    }
+                    InstrumentType.BAJO_SINTETIZADO -> {
+                        val attack = (sec / 0.01).coerceIn(0.0, 1.0)
+                        val decay = exp(-0.6 * sec)
+                        amplitude = attack * decay * (velocity / 127.0) * 0.45
+                    }
+                }
             }
         }
     }
 
     init {
         try {
-            val format = AudioFormat(SAMPLE_RATE, 16, 1, true, true)
+            val format = AudioFormat(SAMPLE_RATE, 16, 2, true, false)
             val info = DataLine.Info(SourceDataLine::class.java, format)
             val l = AudioSystem.getLine(info) as SourceDataLine
-            // Abrir con un buffer muy pequeño (512 bytes = ~2.9ms latencia) para tiempo real
-            l.open(format, 1024)
+            l.open(format, 4096)
             l.start()
             line = l
 
             synthThread = thread(start = true, isDaemon = true, name = "SoftwareSynthThread") {
-                val buffer = ByteArray(512)
+                val buffer = ByteArray(1024)
                 while (running) {
-                    generateSamples(buffer)
-                    line?.write(buffer, 0, buffer.size)
+                    try {
+                        generateSamples(buffer)
+                        val currentLine = line
+                        if (currentLine != null && currentLine.isOpen) {
+                            currentLine.write(buffer, 0, buffer.size)
+                        } else {
+                            Thread.sleep(10)
+                        }
+                    } catch (e: Exception) {
+                        try { Thread.sleep(20) } catch (te: Exception) {}
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -70,11 +136,11 @@ class SimpleSoftwareSynth {
         }
     }
 
-    fun noteOn(pitch: Int, velocity: Int) {
+    fun noteOn(pitch: Int, velocity: Int, instrument: InstrumentType) {
         val freq = 440.0 * Math.pow(2.0, (pitch - 69.0) / 12.0)
         synchronized(activeNotes) {
             sustainedNotes.remove(pitch)
-            activeNotes[pitch] = ActiveNote(pitch, freq, velocity)
+            activeNotes[pitch] = ActiveNote(pitch, freq, velocity, instrument)
         }
     }
 
@@ -89,12 +155,12 @@ class SimpleSoftwareSynth {
     }
 
     private fun releaseNote(pitch: Int) {
-            val note = activeNotes[pitch]
-            if (note != null && !note.isReleased) {
-                note.isReleased = true
-                note.releaseAmplitude = note.amplitude
-                note.releaseSamples = 0L
-            }
+        val note = activeNotes[pitch]
+        if (note != null && !note.isReleased) {
+            note.isReleased = true
+            note.releaseAmplitude = note.amplitude
+            note.releaseSamples = 0L
+        }
     }
 
     fun setSustain(enabled: Boolean) {
@@ -109,8 +175,8 @@ class SimpleSoftwareSynth {
 
     fun playClick() {
         synchronized(activeNotes) {
-            activeNotes[-1] = ActiveNote(-1, 1000.0, 90).apply {
-                amplitude = 0.08
+            activeNotes[-1] = ActiveNote(-1, 1000.0, 90, InstrumentType.PIANO_ACUSTICO).apply {
+                amplitude = 0.18
             }
         }
     }
@@ -123,12 +189,12 @@ class SimpleSoftwareSynth {
     }
 
     private fun generateSamples(buffer: ByteArray) {
-        val numSamples = buffer.size / 2
+        val numSamples = buffer.size / 4
         val mixedSamples = DoubleArray(numSamples)
 
         synchronized(activeNotes) {
-            // Eliminar notas ya apagadas/silenciadas
-            activeNotes.entries.removeIf { it.value.amplitude <= 0.001 }
+            // Eliminar notas apagadas/silenciadas que ya hayan sido procesadas al menos una vez
+            activeNotes.entries.removeIf { it.value.ageSamples > 0 && it.value.amplitude <= 0.001 }
 
             val polyphonyGain = 1.0 / sqrt(activeNotes.size.coerceAtLeast(1).toDouble())
             val nyquist = SAMPLE_RATE / 2.0
@@ -140,17 +206,104 @@ class SimpleSoftwareSynth {
                     note.phase += angle
                     if (note.phase > 2.0 * PI) note.phase -= 2.0 * PI
 
-                    // Solo generar armónicos por debajo de Nyquist. Los armónicos
-                    // fuera de rango se repliegan como chirridos (aliasing).
-                    var tone = sin(note.phase)
-                    if (note.frequency * 2.0 < nyquist) tone += sin(note.phase * 2.0) * 0.25
-                    if (note.frequency * 3.0 < nyquist) tone += sin(note.phase * 3.0) * 0.10
-                    if (note.frequency * 4.0 < nyquist) tone += sin(note.phase * 4.0) * 0.04
+                    val t = note.ageSamples.toDouble() / SAMPLE_RATE + (i.toDouble() / SAMPLE_RATE)
+                    var tone = 0.0
+
+                    when (note.instrument) {
+                        InstrumentType.PIANO_ACUSTICO -> {
+                            var s = sin(note.phase)
+                            val h2Decay = exp(-4.0 * t)
+                            val h3Decay = exp(-8.0 * t)
+                            val h4Decay = exp(-12.0 * t)
+                            if (note.frequency * 2.0 < nyquist) s += sin(note.phase * 2.0) * 0.35 * h2Decay
+                            if (note.frequency * 3.0 < nyquist) s += sin(note.phase * 3.0) * 0.15 * h3Decay
+                            if (note.frequency * 4.0 < nyquist) s += sin(note.phase * 4.0) * 0.08 * h4Decay
+                            tone = s
+                        }
+                        InstrumentType.PIANO_ELECTRICO -> {
+                            var s = sin(note.phase)
+                            val h2Decay = exp(-1.5 * t)
+                            val h3Decay = exp(-3.0 * t)
+                            if (note.frequency * 2.0 < nyquist) s += sin(note.phase * 2.0) * 0.6 * h2Decay
+                            if (note.frequency * 3.0 < nyquist) s += sin(note.phase * 3.0) * 0.35 * h3Decay
+                            val tremolo = 1.0 + 0.18 * sin(2.0 * PI * 5.0 * t)
+                            tone = s * tremolo
+                        }
+                        InstrumentType.XILOFONO -> {
+                            var s = sin(note.phase)
+                            val f2 = note.frequency * 3.0
+                            val f3 = note.frequency * 6.0
+                            val h2Decay = exp(-25.0 * t)
+                            val h3Decay = exp(-45.0 * t)
+                            if (f2 < nyquist) s += sin(note.phase * 3.0) * 0.5 * h2Decay
+                            if (f3 < nyquist) s += sin(note.phase * 6.0) * 0.25 * h3Decay
+                            tone = s
+                        }
+                        InstrumentType.SAXOFON -> {
+                            val vibrato = 1.0 + 0.007 * sin(2.0 * PI * 6.0 * t)
+                            val modulatedPhase = note.phase * vibrato
+                            var s = sin(modulatedPhase)
+                            if (note.frequency * 2.0 < nyquist) s += sin(modulatedPhase * 2.0) * 0.4
+                            if (note.frequency * 3.0 < nyquist) s += sin(modulatedPhase * 3.0) * 0.5
+                            if (note.frequency * 4.0 < nyquist) s += sin(modulatedPhase * 4.0) * 0.2
+                            if (note.frequency * 5.0 < nyquist) s += sin(modulatedPhase * 5.0) * 0.3
+                            val breathNoise = (kotlin.random.Random.nextFloat() * 2.0 - 1.0) * 0.08 * exp(-10.0 * t)
+                            tone = s + breathNoise
+                        }
+                        InstrumentType.MELODICA -> {
+                            var s = sin(note.phase)
+                            if (note.frequency * 2.0 < nyquist) s += sin(note.phase * 2.0) * 0.3
+                            if (note.frequency * 3.0 < nyquist) s += sin(note.phase * 3.0) * 0.6
+                            if (note.frequency * 5.0 < nyquist) s += sin(note.phase * 5.0) * 0.4
+                            if (note.frequency * 7.0 < nyquist) s += sin(note.phase * 7.0) * 0.2
+                            tone = s * 0.8
+                        }
+                        InstrumentType.ORGANO -> {
+                            var s = sin(note.phase)
+                            if (note.frequency * 2.0 < nyquist) s += sin(note.phase * 2.0) * 0.5
+                            if (note.frequency * 3.0 < nyquist) s += sin(note.phase * 3.0) * 0.3
+                            if (note.frequency * 4.0 < nyquist) s += sin(note.phase * 4.0) * 0.2
+                            if (note.frequency * 5.0 < nyquist) s += sin(note.phase * 5.0) * 0.1
+                            tone = s
+                        }
+                        InstrumentType.SINTETIZADOR_PAD -> {
+                            val s1 = sin(note.phase * 0.9985)
+                            val s2 = sin(note.phase * 1.0015)
+                            tone = (s1 + s2) * 0.5
+                        }
+                        InstrumentType.CLAVECIN -> {
+                            var s = sin(note.phase)
+                            val h2Decay = exp(-3.0 * t)
+                            val h3Decay = exp(-5.0 * t)
+                            val h4Decay = exp(-7.0 * t)
+                            val h5Decay = exp(-9.0 * t)
+                            if (note.frequency * 2.0 < nyquist) s += sin(note.phase * 2.0) * 0.7 * h2Decay
+                            if (note.frequency * 3.0 < nyquist) s += sin(note.phase * 3.0) * 0.5 * h3Decay
+                            if (note.frequency * 4.0 < nyquist) s += sin(note.phase * 4.0) * 0.4 * h4Decay
+                            if (note.frequency * 5.0 < nyquist) s += sin(note.phase * 5.0) * 0.3 * h5Decay
+                            tone = s
+                        }
+                        InstrumentType.FLAUTA -> {
+                            val vibrato = 1.0 + 0.005 * sin(2.0 * PI * 4.5 * t)
+                            var s = sin(note.phase * vibrato)
+                            if (note.frequency * 2.0 < nyquist) s += sin(note.phase * 2.0 * vibrato) * 0.1
+                            val breath = (kotlin.random.Random.nextFloat() * 2.0 - 1.0) * 0.04
+                            tone = s + breath
+                        }
+                        InstrumentType.BAJO_SINTETIZADO -> {
+                            var s = sin(note.phase)
+                            for (harm in 2..6) {
+                                val fH = note.frequency * harm
+                                if (fH < nyquist) {
+                                    s += sin(note.phase * harm) * (1.0 / harm)
+                                }
+                            }
+                            tone = s * 0.9
+                        }
+                    }
 
                     mixed += tone * note.amplitude
                 }
-                // Normalizar la polifonía y limitar suavemente; el recorte duro era
-                // otra fuente de distorsión al tocar acordes.
                 mixedSamples[i] = tanh(mixed * polyphonyGain * 1.2) * 0.9
             }
 
@@ -160,11 +313,16 @@ class SimpleSoftwareSynth {
             }
         }
 
-        // Conversión a PCM de 16 bits en Big Endian
+        // Conversión a PCM de 16 bits en Little Endian (Estéreo)
         for (i in 0 until numSamples) {
-            val sampleVal = (mixedSamples[i] * 32767.0).toInt()
-            buffer[i * 2] = (sampleVal shr 8).toByte()
-            buffer[i * 2 + 1] = (sampleVal and 0xFF).toByte()
+            val sampleVal = (mixedSamples[i] * 32767.0).toInt().coerceIn(-32768, 32767)
+            val low = (sampleVal and 0xFF).toByte()
+            val high = ((sampleVal shr 8) and 0xFF).toByte()
+            
+            buffer[i * 4] = low
+            buffer[i * 4 + 1] = high
+            buffer[i * 4 + 2] = low
+            buffer[i * 4 + 3] = high
         }
     }
 
@@ -179,7 +337,7 @@ class SimpleSoftwareSynth {
     fun selectMixer(mixerName: String) {
         if (mixerName == selectedMixerName && line?.isOpen == true) return
         try {
-            val format = AudioFormat(SAMPLE_RATE, 16, 1, true, true)
+            val format = AudioFormat(SAMPLE_RATE, 16, 2, true, false)
             val info = DataLine.Info(SourceDataLine::class.java, format)
             
             val newLine = if (mixerName == "Sistema (Predeterminado)") {
@@ -193,7 +351,7 @@ class SimpleSoftwareSynth {
                 }
             }
             
-            newLine.open(format, 1024)
+            newLine.open(format, 4096)
             newLine.start()
             
             val oldLine = line
@@ -213,6 +371,7 @@ class DesktopMidiDeviceManager : MidiDeviceManager {
     private var activeDevice: MidiDevice? = null
     private val softwareSynth = SimpleSoftwareSynth()
     @Volatile private var internalSoundEnabled = true
+    private var currentInstrument = InstrumentType.PIANO_ACUSTICO
 
     override fun getAvailableDevices(): List<String> {
         val infos = MidiSystem.getMidiDeviceInfo()
@@ -221,7 +380,6 @@ class DesktopMidiDeviceManager : MidiDeviceManager {
             try {
                 val dev = MidiSystem.getMidiDevice(info)
                 val name = info.name
-                // Filtrar secuenciadores y mapeadores internos de Java/Windows
                 if (name.contains("Sequencer", ignoreCase = true) || 
                     name.contains("Mapper", ignoreCase = true) || 
                     name.contains("Synth", ignoreCase = true)) {
@@ -230,9 +388,7 @@ class DesktopMidiDeviceManager : MidiDeviceManager {
                 if (dev.maxTransmitters != 0) {
                     devices.add(name)
                 }
-            } catch (e: Exception) {
-                // Ignorar dispositivos no accesibles
-            }
+            } catch (e: Exception) {}
         }
         return devices
     }
@@ -286,6 +442,27 @@ class DesktopMidiDeviceManager : MidiDeviceManager {
                 override fun close() {}
             }
             println("Teclado MIDI '$deviceName' conectado con éxito.")
+
+            // Intentar buscar el puerto de salida del teclado para enviarle "Local Control Off" (CC 122, valor 0)
+            // Esto silencia las cornetas/sonidos del teclado físico para escuchar SOLO el sonido virtual.
+            try {
+                val outInfo = infos.firstOrNull { 
+                    it.name == deviceName && 
+                    try { MidiSystem.getMidiDevice(it).maxReceivers != 0 } catch(e: Exception) { false }
+                }
+                if (outInfo != null) {
+                    val outDev = MidiSystem.getMidiDevice(outInfo)
+                    outDev.open()
+                    val msg = ShortMessage()
+                    msg.setMessage(ShortMessage.CONTROL_CHANGE, 0, 122, 0)
+                    outDev.receiver.send(msg, -1)
+                    outDev.close()
+                    println("Teclado físico silenciado de forma exitosa (Local Control: OFF).")
+                }
+            } catch (e: Exception) {
+                println("Aviso: No se pudo silenciar el sonido interno del teclado físico (puede no soportar CC 122).")
+            }
+
         } catch (e: Exception) {
             println("Error al conectar teclado MIDI: ${e.message}")
         }
@@ -299,7 +476,7 @@ class DesktopMidiDeviceManager : MidiDeviceManager {
     override fun playNoteDirect(pitch: Int, velocity: Int) {
         if (!internalSoundEnabled) return
         if (velocity > 0) {
-            softwareSynth.noteOn(pitch, velocity)
+            softwareSynth.noteOn(pitch, velocity, currentInstrument)
         } else {
             softwareSynth.noteOff(pitch)
         }
@@ -344,6 +521,12 @@ class DesktopMidiDeviceManager : MidiDeviceManager {
     override fun selectAudioOutput(name: String) {
         softwareSynth.selectMixer(name)
     }
+
+    override fun selectInstrument(instrument: InstrumentType) {
+        currentInstrument = instrument
+    }
+
+    override fun getInstrument(): InstrumentType = currentInstrument
 }
 
 actual fun getPlatformMidiDeviceManager(): MidiDeviceManager {

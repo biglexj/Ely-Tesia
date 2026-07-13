@@ -1,8 +1,26 @@
 package com.biglexj.elytesia.midi
 
+enum class InstrumentType {
+    PIANO_ACUSTICO,
+    PIANO_ELECTRICO,
+    XILOFONO,
+    SAXOFON,
+    MELODICA,
+    ORGANO,
+    SINTETIZADOR_PAD,
+    CLAVECIN,
+    FLAUTA,
+    BAJO_SINTETIZADO
+}
+
 interface MidiDeviceManager {
     fun getAvailableDevices(): List<String>
-    fun openDevice(deviceName: String, onNoteOn: (pitch: Int, velocity: Int) -> Unit, onNoteOff: (pitch: Int) -> Unit, onControlChange: (controller: Int, value: Int, channel: Int) -> Unit)
+    fun openDevice(
+        deviceName: String,
+        onNoteOn: (pitch: Int, velocity: Int) -> Unit,
+        onNoteOff: (pitch: Int) -> Unit,
+        onControlChange: (controller: Int, value: Int, channel: Int) -> Unit
+    )
     fun closeDevice()
     fun playNoteDirect(pitch: Int, velocity: Int) // Para reproducir sonido directamente
     fun playControlChange(controller: Int, value: Int)
@@ -13,6 +31,10 @@ interface MidiDeviceManager {
     // Dispositivos de salida de audio
     fun getAudioOutputs(): List<String>
     fun selectAudioOutput(name: String)
+
+    // Selección de instrumento virtual
+    fun selectInstrument(instrument: InstrumentType)
+    fun getInstrument(): InstrumentType
 }
 
 expect fun getPlatformMidiDeviceManager(): MidiDeviceManager

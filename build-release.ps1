@@ -9,8 +9,8 @@ param(
 $ErrorActionPreference = "Stop"
 $root = $PSScriptRoot
 $releaseDir = Join-Path $root "release"
-$version = "1.0.1"
-$windowsPackageVersion = "1.0.1"
+$version = "1.0.2"
+$windowsPackageVersion = "1.0.2"
 
 function Find-JavaHome {
     $candidates = @(

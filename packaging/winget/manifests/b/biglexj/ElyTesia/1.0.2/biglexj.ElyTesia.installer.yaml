@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.10.0.schema.json
+
+PackageIdentifier: biglexj.ElyTesia
+PackageVersion: 1.0.2
+InstallerType: wix
+Scope: user
+InstallModes:
+  - interactive
+  - silent
+  - silentWithProgress
+UpgradeBehavior: install
+ProductCode: '{C1E853DB-DCA4-3B3E-9364-2E4E5135CF43}'
+ReleaseDate: 2026-07-12
+Installers:
+  - Architecture: x64
+    InstallerUrl: https://github.com/biglexj/Ely-Tesia/releases/download/v1.0.2/ElyTesia-Windows-1.0.2.msi
+    InstallerSha256: AB99F015CDCC4E00A7EF80916CEF95F23A0ABA4843BE0FB252852B8E24DCE70E
+ManifestType: installer
+ManifestVersion: 1.10.0
+

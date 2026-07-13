@@ -1,5 +1,6 @@
 package com.biglexj.elytesia
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,10 +24,12 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.biglexj.elytesia.midi.MidiDeviceManager
 import com.biglexj.elytesia.midi.getPlatformMidiDeviceManager
+import com.biglexj.elytesia.midi.InstrumentType
 import com.biglexj.elytesia.model.NoteEvent
 import com.biglexj.elytesia.model.ControlEvent
 import com.biglexj.elytesia.model.Song
@@ -40,6 +43,8 @@ import com.biglexj.elytesia.ui.NoteLabelMode
 import com.biglexj.elytesia.ui.PianoRollCanvas
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
+enum class SidebarMode { BIBLIOTECA, INSTRUMENTOS }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,6 +63,7 @@ fun App(
     var loadedSong by remember { mutableStateOf<Song?>(null) }
     var currentTimeMs by remember { mutableStateOf(0L) }
     var isPlaying by remember { mutableStateOf(false) }
+    var isWaitingForMidiTrigger by remember { mutableStateOf(false) }
     var loopEnabled by remember { mutableStateOf(false) }
     var playbackRestartToken by remember { mutableStateOf(0) }
     var waitMode by remember { mutableStateOf(false) } // Modo Espera
@@ -87,7 +93,14 @@ fun App(
     var tempMinPitch by remember { mutableStateOf(21) }
 
     // Biblioteca / Sidebar
-    var sidebarOpen by remember { mutableStateOf(false) }
+    var activeSidebar by remember { mutableStateOf<SidebarMode?>(null) }
+    var selectedInstrument by remember {
+        mutableStateOf(
+            restoredState?.selectedInstrument?.let { saved ->
+                InstrumentType.entries.firstOrNull { it.name == saved }
+            } ?: InstrumentType.PIANO_ACUSTICO
+        )
+    }
     val songList = remember { mutableStateListOf<Song>() }
 
     val activeKeys = remember { mutableStateMapOf<Int, Int>() } // Notas activas de la reproducción
@@ -251,6 +264,12 @@ fun App(
     // Inicializar dispositivos, precargar canciones y listar salidas de audio
     LaunchedEffect(Unit) {
         availableDevices = midiDeviceManager.getAvailableDevices()
+                                                         if (selectedDevice !in availableDevices) {
+                                                             selectedDevice = availableDevices.firstOrNull().orEmpty()
+                                                         }
+                                                         if (selectedDevice !in availableDevices) {
+                                                             selectedDevice = availableDevices.firstOrNull().orEmpty()
+                                                         }
         if (availableDevices.isNotEmpty()) {
             selectedDevice = availableDevices.first()
         }
@@ -280,6 +299,7 @@ fun App(
         noteLabelMode,
         selectedAudioDevice,
         loadedSong?.name,
+        selectedInstrument,
         songList.toList()
     ) {
         if (stateInitialized) {
@@ -292,6 +312,7 @@ fun App(
                         noteLabelMode = noteLabelMode.name,
                         selectedAudioDevice = selectedAudioDevice,
                         selectedSongName = loadedSong?.name,
+                        selectedInstrument = selectedInstrument.name,
                         songs = songList.toList()
                     )
                 )
@@ -319,6 +340,9 @@ fun App(
                                 mappingStep = 0
                             }
                         } else {
+                            if (isWaitingForMidiTrigger) {
+                                isWaitingForMidiTrigger = false
+                            }
                             evaluatePlayedPitch(pitch)
                             recordNoteOn(pitch, velocity)
                             if (pitch !in userActiveKeys) {
@@ -353,6 +377,10 @@ fun App(
         midiDeviceManager.selectAudioOutput(selectedAudioDevice)
     }
 
+    LaunchedEffect(selectedInstrument) {
+        midiDeviceManager.selectInstrument(selectedInstrument)
+    }
+
     LaunchedEffect(internalSoundEnabled) {
         midiDeviceManager.setInternalSoundEnabled(internalSoundEnabled)
     }
@@ -361,6 +389,7 @@ fun App(
     LaunchedEffect(isPlaying, loadedSong, playbackRestartToken) {
         if (isPlaying && loadedSong != null) {
             val song = loadedSong!!
+            isWaitingForMidiTrigger = selectedDevice.isNotEmpty()
             var lastTimeSystem = System.currentTimeMillis()
             val previousActiveNotes = mutableSetOf<NoteEvent>()
             val playedControls = mutableSetOf<ControlEvent>()
@@ -380,7 +409,7 @@ fun App(
                 val startingNotes = activeNow.filter { currentTimeMs >= it.startTimeMs && currentTimeMs < it.startTimeMs + 80 }
                 val missingPitches = startingNotes.map { it.pitch }.filter { it !in userActiveKeys }
                 
-                val needsToWait = waitMode && missingPitches.isNotEmpty()
+                val needsToWait = (waitMode && missingPitches.isNotEmpty()) || isWaitingForMidiTrigger
                 
                 if (!needsToWait) {
                     currentTimeMs += (delta * speedMultiplier).toLong()
@@ -459,6 +488,7 @@ fun App(
                 delay(12)
             }
         } else {
+            isWaitingForMidiTrigger = false
             activeKeys.clear()
             activeKeyTracks.clear()
             midiDeviceManager.stopAllNotes()
@@ -544,7 +574,7 @@ fun App(
                                     )
                                 }
                                 Button(
-                                    onClick = { sidebarOpen = true },
+                                    onClick = { activeSidebar = SidebarMode.BIBLIOTECA },
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155)),
                                     modifier = Modifier.height(44.dp),
                                     contentPadding = PaddingValues(horizontal = 12.dp)
@@ -562,6 +592,12 @@ fun App(
                                     onClick = {
                                         if (availableDevices.isEmpty()) {
                                             availableDevices = midiDeviceManager.getAvailableDevices()
+                                                         if (selectedDevice !in availableDevices) {
+                                                             selectedDevice = availableDevices.firstOrNull().orEmpty()
+                                                         }
+                                                         if (selectedDevice !in availableDevices) {
+                                                             selectedDevice = availableDevices.firstOrNull().orEmpty()
+                                                         }
                                             selectedDevice = availableDevices.firstOrNull().orEmpty()
                                         } else {
                                             val current = availableDevices.indexOf(selectedDevice)
@@ -582,6 +618,12 @@ fun App(
                                 Button(
                                     onClick = {
                                         availableDevices = midiDeviceManager.getAvailableDevices()
+                                                         if (selectedDevice !in availableDevices) {
+                                                             selectedDevice = availableDevices.firstOrNull().orEmpty()
+                                                         }
+                                                         if (selectedDevice !in availableDevices) {
+                                                             selectedDevice = availableDevices.firstOrNull().orEmpty()
+                                                         }
                                         if (selectedDevice !in availableDevices) selectedDevice = availableDevices.firstOrNull().orEmpty()
                                     },
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155)),
@@ -812,7 +854,7 @@ fun App(
                                             DropdownMenu(
                                                 expanded = dropdownExpanded,
                                                 onDismissRequest = { dropdownExpanded = false },
-                                                modifier = Modifier.width(160.dp).background(SurfaceGray)
+                                                modifier = Modifier.width(160.dp).heightIn(max = 320.dp).background(SurfaceGray)
                                             ) {
                                                 if (availableDevices.isEmpty()) {
                                                     DropdownMenuItem(
@@ -823,7 +865,29 @@ fun App(
                                                 } else {
                                                     availableDevices.forEach { device ->
                                                         DropdownMenuItem(
-                                                            text = { Text(device, color = TextMain, fontSize = 12.sp) },
+                                                            text = {
+                                                                val isActive = device == selectedDevice
+                                                                Row(
+                                                                    verticalAlignment = Alignment.CenterVertically,
+                                                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                                ) {
+                                                                    if (isActive) {
+                                                                        Box(
+                                                                            modifier = Modifier
+                                                                                .size(6.dp)
+                                                                                .background(ElyGreen, shape = RoundedCornerShape(50))
+                                                                        )
+                                                                    }
+                                                                    Text(
+                                                                        text = device,
+                                                                        modifier = Modifier.weight(1f),
+                                                                        color = if (isActive) ElyGreen else TextMain,
+                                                                        fontSize = 12.sp,
+                                                                        maxLines = 2,
+                                                                        overflow = TextOverflow.Ellipsis
+                                                                    )
+                                                                }
+                                                            },
                                                             onClick = {
                                                                 selectedDevice = device
                                                                 dropdownExpanded = false
@@ -837,6 +901,12 @@ fun App(
                                                     text = { Text("Buscar de nuevo ↻", color = ElyCream, fontSize = 12.sp) },
                                                     onClick = {
                                                         availableDevices = midiDeviceManager.getAvailableDevices()
+                                                         if (selectedDevice !in availableDevices) {
+                                                             selectedDevice = availableDevices.firstOrNull().orEmpty()
+                                                         }
+                                                         if (selectedDevice !in availableDevices) {
+                                                             selectedDevice = availableDevices.firstOrNull().orEmpty()
+                                                         }
                                                     },
                                                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
                                                 )
@@ -876,11 +946,33 @@ fun App(
                                             DropdownMenu(
                                                 expanded = audioDropdownExpanded,
                                                 onDismissRequest = { audioDropdownExpanded = false },
-                                                modifier = Modifier.width(160.dp).background(SurfaceGray)
+                                                modifier = Modifier.width(160.dp).heightIn(max = 320.dp).background(SurfaceGray)
                                             ) {
                                                 audioDevices.forEach { devName ->
                                                     DropdownMenuItem(
-                                                        text = { Text(devName, color = TextMain, fontSize = 12.sp) },
+                                                        text = {
+                                                            val isActive = devName == selectedAudioDevice
+                                                            Row(
+                                                                verticalAlignment = Alignment.CenterVertically,
+                                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                            ) {
+                                                                if (isActive) {
+                                                                    Box(
+                                                                        modifier = Modifier
+                                                                            .size(6.dp)
+                                                                            .background(ElyCream, shape = RoundedCornerShape(50))
+                                                                    )
+                                                                }
+                                                                Text(
+                                                                    text = devName,
+                                                                    modifier = Modifier.weight(1f),
+                                                                    color = if (isActive) ElyCream else TextMain,
+                                                                    fontSize = 12.sp,
+                                                                    maxLines = 2,
+                                                                    overflow = TextOverflow.Ellipsis
+                                                                )
+                                                            }
+                                                        },
                                                         onClick = {
                                                             selectedAudioDevice = devName
                                                             audioDropdownExpanded = false
@@ -1394,9 +1486,9 @@ fun App(
                     ) {
                         val songName = loadedSong?.name ?: "Demo"
                         Text(
-                            text = if (songName.length > 18) songName.take(15) + "..." else songName,
+                            text = if (isWaitingForMidiTrigger) "Esperando MIDI..." else if (songName.length > 18) songName.take(15) + "..." else songName,
                             fontSize = 13.sp,
-                            color = TextContrast,
+                            color = if (isWaitingForMidiTrigger) ElyPink else TextContrast,
                             fontWeight = FontWeight.SemiBold
                         )
 
@@ -1475,31 +1567,58 @@ fun App(
                 }
             }
 
-            // 3. Botón Flotante de Biblioteca (Sidebar)
-            if (!isPlaying && !sidebarOpen && !isCompactLayout) {
-                Box(
+            // 3. Botones Flotantes de Biblioteca e Instrumentos (En Columna)
+            if (!isPlaying && activeSidebar == null && !isCompactLayout) {
+                Column(
                     modifier = Modifier
                         .padding(top = 24.dp, start = 24.dp)
-                        .height(38.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(SurfaceGray.copy(alpha = 0.9f))
-                        .border(1.dp, BorderGray, RoundedCornerShape(8.dp))
-                        .clickable { sidebarOpen = true }
-                        .padding(horizontal = 14.dp),
-                    contentAlignment = Alignment.Center
+                        .wrapContentSize(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    Box(
+                        modifier = Modifier
+                            .width(135.dp)
+                            .height(38.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(SurfaceGray.copy(alpha = 0.9f))
+                            .border(1.dp, BorderGray, RoundedCornerShape(8.dp))
+                            .clickable { activeSidebar = SidebarMode.BIBLIOTECA }
+                            .padding(horizontal = 12.dp),
+                        contentAlignment = Alignment.CenterStart
                     ) {
-                        Text("📁", fontSize = 14.sp)
-                        Text("Biblioteca", color = TextMain, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text("📁", fontSize = 14.sp)
+                            Text("Biblioteca", color = TextMain, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .width(135.dp)
+                            .height(38.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(SurfaceGray.copy(alpha = 0.9f))
+                            .border(1.dp, BorderGray, RoundedCornerShape(8.dp))
+                            .clickable { activeSidebar = SidebarMode.INSTRUMENTOS }
+                            .padding(horizontal = 12.dp),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text("🎹", fontSize = 14.sp)
+                            Text("Instrumentos", color = TextMain, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
 
-            // 4. Sidebar (Menú lateral de canciones)
-            if (sidebarOpen && !isPlaying) {
+            // 4. Sidebar (Menú lateral izquierdo dinámico)
+            if (activeSidebar != null && !isPlaying) {
                 Card(
                     modifier = Modifier
                         .width(260.dp)
@@ -1527,13 +1646,13 @@ fun App(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "Biblioteca MIDI",
+                                text = if (activeSidebar == SidebarMode.BIBLIOTECA) "Biblioteca MIDI" else "Instrumentos",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = AuroraViolet
                             )
                             IconButton(
-                                onClick = { sidebarOpen = false },
+                                onClick = { activeSidebar = null },
                                 modifier = Modifier.size(24.dp)
                             ) {
                                 Text("✕", color = TextContrast, fontSize = 12.sp, fontWeight = FontWeight.Bold)
@@ -1542,58 +1661,106 @@ fun App(
                         
                         Spacer(modifier = Modifier.height(16.dp))
                         
-                        androidx.compose.foundation.lazy.LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            items(songList.size) { index ->
-                                val song = songList[index]
-                                val isSelected = song == loadedSong
-                                
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .background(if (isSelected) AuroraViolet.copy(alpha = 0.2f) else Color.Transparent)
-                                        .border(
-                                            width = 1.dp, 
-                                            color = if (isSelected) AuroraViolet else BorderGray.copy(alpha = 0.5f), 
-                                            shape = RoundedCornerShape(6.dp)
-                                        )
-                                        .clickable {
-                                            loadedSong = song
-                                            isPlaying = false
-                                            currentTimeMs = 0L
-                                            activeKeys.clear()
-                                            speedMultiplier = 1.0f
-                                            sidebarOpen = false
+                        if (activeSidebar == SidebarMode.BIBLIOTECA) {
+                            androidx.compose.foundation.lazy.LazyColumn(
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                items(songList.size) { index ->
+                                    val song = songList[index]
+                                    val isSelected = song == loadedSong
+                                    
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .background(if (isSelected) AuroraViolet.copy(alpha = 0.2f) else Color.Transparent)
+                                            .border(
+                                                width = 1.dp, 
+                                                color = if (isSelected) AuroraViolet else BorderGray.copy(alpha = 0.5f), 
+                                                shape = RoundedCornerShape(6.dp)
+                                            )
+                                            .clickable {
+                                                loadedSong = song
+                                                isPlaying = false
+                                                currentTimeMs = 0L
+                                                activeKeys.clear()
+                                                speedMultiplier = 1.0f
+                                                activeSidebar = null
+                                            }
+                                            .padding(12.dp)
+                                    ) {
+                                        Column {
+                                            Text(
+                                                text = song.name,
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = if (isSelected) TextMain else TextContrast,
+                                                maxLines = 1
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(
+                                                    text = "${song.bpm.toInt()} BPM",
+                                                    fontSize = 10.sp,
+                                                    color = TextContrast
+                                                )
+                                                Text(
+                                                    text = "${song.durationMs / 1000}s",
+                                                    fontSize = 10.sp,
+                                                    color = TextContrast
+                                                )
+                                            }
                                         }
-                                        .padding(12.dp)
-                                ) {
-                                    Column {
+                                    }
+                                }
+                            }
+                        } else {
+                            val instrumentsList = listOf(
+                                Pair(InstrumentType.PIANO_ACUSTICO, "🎹 Piano Acústico"),
+                                Pair(InstrumentType.PIANO_ELECTRICO, "🔔 Piano Eléctrico"),
+                                Pair(InstrumentType.XILOFONO, "🪵 Xilófono"),
+                                Pair(InstrumentType.SAXOFON, "🎷 Saxofón"),
+                                Pair(InstrumentType.MELODICA, "🌬️ Melódica"),
+                                Pair(InstrumentType.ORGANO, "⛪ Órgano de Iglesia"),
+                                Pair(InstrumentType.SINTETIZADOR_PAD, "🌌 Colchón Pad"),
+                                Pair(InstrumentType.CLAVECIN, "🎸 Clavecín"),
+                                Pair(InstrumentType.FLAUTA, "🎵 Flauta Dulce"),
+                                Pair(InstrumentType.BAJO_SINTETIZADO, "🔊 Bajo Sintetizado")
+                            )
+
+                            androidx.compose.foundation.lazy.LazyColumn(
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                items(instrumentsList.size) { index ->
+                                    val (type, name) = instrumentsList[index]
+                                    val isSelected = type == selectedInstrument
+                                    
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .background(if (isSelected) AuroraViolet.copy(alpha = 0.2f) else Color.Transparent)
+                                            .border(
+                                                width = 1.dp, 
+                                                color = if (isSelected) AuroraViolet else BorderGray.copy(alpha = 0.5f), 
+                                                shape = RoundedCornerShape(6.dp)
+                                            )
+                                            .clickable {
+                                                selectedInstrument = type
+                                            }
+                                            .padding(12.dp)
+                                    ) {
                                         Text(
-                                            text = song.name,
+                                            text = name,
                                             fontSize = 13.sp,
                                             fontWeight = FontWeight.SemiBold,
-                                            color = if (isSelected) TextMain else TextContrast,
-                                            maxLines = 1
+                                            color = if (isSelected) TextMain else TextContrast
                                         )
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween
-                                        ) {
-                                            Text(
-                                                text = "${song.bpm.toInt()} BPM",
-                                                fontSize = 10.sp,
-                                                color = TextContrast
-                                            )
-                                            Text(
-                                                text = "${song.durationMs / 1000}s",
-                                                fontSize = 10.sp,
-                                                color = TextContrast
-                                            )
-                                        }
                                     }
                                 }
                             }
@@ -1612,6 +1779,9 @@ fun App(
                 noteLabelMode = noteLabelMode,
                 onKeyAction = { pitch, isPressed ->
                     if (isPressed) {
+                        if (isWaitingForMidiTrigger) {
+                            isWaitingForMidiTrigger = false
+                        }
                         if (pitch !in userActiveKeys) {
                             userActiveKeys.add(pitch)
                         }
@@ -1636,6 +1806,72 @@ fun App(
                     .background(SurfaceGray)
                     .border(1.dp, BorderGray)
             )
+
+            if (isWaitingForMidiTrigger) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.4f))
+                        .clickable(enabled = false) {},
+                    contentAlignment = Alignment.Center
+                ) {
+                    Card(
+                        modifier = Modifier
+                            .padding(24.dp)
+                            .widthIn(max = 420.dp)
+                            .border(1.dp, AuroraViolet.copy(alpha = 0.5f), RoundedCornerShape(16.dp)),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = SurfaceGray.copy(alpha = 0.95f)
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Text(
+                                text = "🎹",
+                                fontSize = 36.sp
+                            )
+                            Text(
+                                text = "Esperando entrada MIDI",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextMain
+                            )
+                            Text(
+                                text = "Presiona cualquier tecla de tu teclado MIDI para iniciar la reproducción de '${loadedSong?.name ?: "la canción"}'.",
+                                fontSize = 13.sp,
+                                color = TextContrast,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Button(
+                                    onClick = { isWaitingForMidiTrigger = false },
+                                    colors = ButtonDefaults.buttonColors(containerColor = AuroraViolet)
+                                ) {
+                                    Text("Iniciar ya", fontWeight = FontWeight.Bold)
+                                }
+                                Button(
+                                    onClick = { 
+                                        isPlaying = false
+                                        isWaitingForMidiTrigger = false
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = TextContrast),
+                                    border = BorderStroke(1.dp, BorderGray)
+                                ) {
+                                    Text("Cancelar")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

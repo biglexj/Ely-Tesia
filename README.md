@@ -7,7 +7,7 @@ puede trabajar con un teclado MIDI físico en Windows.
 
 ![Icono de Ely-Tesia](assets/branding/elytesia-icon-1024.png)
 
-## Funciones de la versión 1.0.1
+## Funciones de la versión 1.0.2
 
 - Carga y visualización de archivos MIDI en Windows y Android.
 - Piano roll animado y teclado virtual interactivo.
@@ -37,10 +37,10 @@ puede trabajar con un teclado MIDI físico en Windows.
 
 Los paquetes generados se guardan en la carpeta `release/`:
 
-- `ElyTesia-Windows-1.0.1.msi`
-- `ElyTesia-Windows-1.0.1.exe`
-- `ElyTesia-Windows-1.0.1.msix`
-- `ElyTesia-Android-1.0.1-debug.apk`
+- `ElyTesia-Windows-1.0.2.msi`
+- `ElyTesia-Windows-1.0.2.exe`
+- `ElyTesia-Windows-1.0.2.msix`
+- `ElyTesia-Android-1.0.2-debug.apk`
 - `SHA256SUMS.txt`
 
 El APK incluido es una compilación de depuración destinada a instalación y
