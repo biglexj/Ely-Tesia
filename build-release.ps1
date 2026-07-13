@@ -1,13 +1,16 @@
 param(
     [switch]$SkipWindows,
-    [switch]$SkipAndroid
+    [switch]$SkipAndroid,
+    [switch]$SkipMsix,
+    [string]$MsixCertificate,
+    [securestring]$MsixCertificatePassword
 )
 
 $ErrorActionPreference = "Stop"
 $root = $PSScriptRoot
 $releaseDir = Join-Path $root "release"
-$version = "1.0.0"
-$windowsPackageVersion = "1.0.0"
+$version = "1.0.1"
+$windowsPackageVersion = "1.0.1"
 
 function Find-JavaHome {
     $candidates = @(
@@ -54,6 +57,21 @@ if (-not $SkipWindows) {
         "$releaseDir\ElyTesia-Windows-$version.msi"
     Copy-Item "$root\composeApp\build\compose\binaries\main\exe\ElyTesia-$windowsPackageVersion.exe" `
         "$releaseDir\ElyTesia-Windows-$version.exe"
+
+    if (-not $SkipMsix) {
+        $msixArgs = @{
+            Version = "$version.0"
+            OutputPath = "$releaseDir\ElyTesia-Windows-$version.msix"
+        }
+        if ($MsixCertificate) { $msixArgs.CertificatePath = $MsixCertificate }
+        if ($MsixCertificatePassword) { $msixArgs.CertificatePassword = $MsixCertificatePassword }
+        try {
+            & "$root\scripts\build-msix.ps1" @msixArgs
+        } catch {
+            Write-Warning "MSIX omitido: $($_.Exception.Message)"
+            Write-Warning "Los paquetes EXE, MSI y APK continuarán generándose normalmente."
+        }
+    }
 }
 if (-not $SkipAndroid) {
     Copy-Item "$root\composeApp\build\outputs\apk\debug\composeApp-debug.apk" `

@@ -7,7 +7,7 @@ puede trabajar con un teclado MIDI físico en Windows.
 
 ![Icono de Ely-Tesia](assets/branding/elytesia-icon-1024.png)
 
-## Funciones de la versión 1.0.0
+## Funciones de la versión 1.0.1
 
 - Carga y visualización de archivos MIDI en Windows y Android.
 - Piano roll animado y teclado virtual interactivo.
@@ -29,14 +29,18 @@ puede trabajar con un teclado MIDI físico en Windows.
 - Reproducción, renombrado y exportación de grabaciones MIDI.
 - Pedal sustain CC64 en entrada, grabación, reproducción y exportación.
 - Interfaz adaptada para escritorio y teléfonos.
+- Colores sincronizados por pista en barras, partículas y teclas.
+- Evaluación visual de notas correctas e incorrectas con tolerancia temporal.
+- Retención del color de cada pulsación hasta soltar la tecla.
 
 ## Descargas
 
 Los paquetes generados se guardan en la carpeta `release/`:
 
-- `ElyTesia-Windows-1.0.0.msi`
-- `ElyTesia-Windows-1.0.0.exe`
-- `ElyTesia-Android-1.0.0-debug.apk`
+- `ElyTesia-Windows-1.0.1.msi`
+- `ElyTesia-Windows-1.0.1.exe`
+- `ElyTesia-Windows-1.0.1.msix`
+- `ElyTesia-Android-1.0.1-debug.apk`
 - `SHA256SUMS.txt`
 
 El APK incluido es una compilación de depuración destinada a instalación y
@@ -50,6 +54,7 @@ App Bundle firmado con una clave permanente.
 - Windows 10 u 11 para generar el instalador MSI.
 - JDK 17 completo con `jpackage`.
 - Android SDK 34 para generar el APK.
+- Windows SDK con `MakeAppx.exe` y `SignTool.exe` para generar y firmar MSIX.
 
 El script busca primero Microsoft OpenJDK 17 y utiliza el Android SDK definido
 en `ANDROID_HOME` o instalado en `%LOCALAPPDATA%\Android\Sdk`.
@@ -67,7 +72,19 @@ Para generar solamente una plataforma:
 ```powershell
 .\build-release.ps1 -SkipAndroid
 .\build-release.ps1 -SkipWindows
+.\build-release.ps1 -SkipMsix
 ```
+
+Para firmar el MSIX durante el build, proporciona el certificado sin guardar su
+contraseña en el repositorio:
+
+```powershell
+$password = Read-Host "Contraseña del certificado" -AsSecureString
+.\build-release.ps1 -MsixCertificate "C:\certificados\ElyTesia.pfx" -MsixCertificatePassword $password
+```
+
+Para Microsoft Store, el valor `Publisher` del manifiesto debe coincidir
+exactamente con la identidad asignada a Ely-Tesia en Partner Center.
 
 ### Ejecutar la aplicación de escritorio
 
@@ -82,7 +99,7 @@ En Windows, la biblioteca, las canciones importadas, el rango mapeado y las
 preferencias se almacenan en:
 
 ```text
-%LOCALAPPDATA%\ElyTesia\state.txt
+%APPDATA%\Ely-Tesia\state.txt
 ```
 
 En Android se utiliza el almacenamiento privado de la aplicación.

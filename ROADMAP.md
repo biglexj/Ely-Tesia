@@ -32,9 +32,23 @@ Estado: **Completado**
 - Interfaz de escritorio y composición responsive para teléfonos.
 - Instalador MSI y APK de prueba.
 
+## Versión 1.0.1
+
+Estado: **Completado**
+
+- Sincronización temporal exacta entre barras y teclado.
+- Colores por pista conservados en barras, partículas y teclas.
+- Sostenidos y bemoles identificados en rosa.
+- Evaluación de notas incorrectas en ámbar con tolerancia temporal.
+- Retención del resultado y color durante toda la pulsación física.
+- Resolución de tonos simultáneos compartidos por varias pistas.
+- Corrección del sintetizador virtual y salida de audio de Windows.
+- Persistencia y migración segura de la biblioteca entre actualizaciones.
+- Empaquetado MSIX para Windows.
+
 ## Próxima actualización - Estabilización
 
-Estado: **En desarrollo**
+Estado: **Planificado**
 
 - Pruebas adicionales en distintos dispositivos Android reales.
 - Ajustes de latencia y tamaño de buffer por fabricante.
@@ -312,7 +326,7 @@ Prioridad: **Media/Baja**
 
 | Plataforma | Artefactos principales | Entorno de build |
 |---|---|---|
-| Windows | MSI | Windows + JDK 17 + WiX |
+| Windows | EXE, MSI y MSIX | Windows + JDK 17 + WiX + Windows SDK |
 | Android | APK y AAB | JDK 17 + Android SDK |
 | Linux universal | AppImage | Linux x86_64 |
 | Debian/Ubuntu | DEB | Linux |
@@ -336,7 +350,8 @@ Prioridad: **Media/Baja**
 
 Estado: **Planificado**
 
-- Instaladores Windows con actualización entre versiones.
+- Instaladores EXE/MSI y paquete MSIX para Windows. **Completado**
+- Publicación futura mediante Microsoft Store y WinGet.
 - APK firmado para distribución directa.
 - Android App Bundle para Google Play.
 - Firma de código para Windows.

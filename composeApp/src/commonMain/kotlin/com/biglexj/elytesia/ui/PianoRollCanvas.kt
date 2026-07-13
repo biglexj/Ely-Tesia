@@ -33,6 +33,7 @@ fun PianoRollCanvas(
     notes: List<NoteEvent>,
     currentTimeMs: Long,
     activeKeys: Map<Int, Int>,
+    activeTracks: Map<Int, Int> = emptyMap(),
     minPitch: Int = 21,
     maxPitch: Int = 108,
     modifier: Modifier = Modifier,
@@ -41,7 +42,7 @@ fun PianoRollCanvas(
     val particles = remember { mutableStateListOf<NoteParticle>() }
 
     // Generador de partículas para las notas activas
-    LaunchedEffect(activeKeys.keys.toList(), currentTimeMs) {
+    LaunchedEffect(activeKeys.toMap(), activeTracks.toMap(), currentTimeMs) {
         if (activeKeys.isNotEmpty()) {
             activeKeys.forEach { (pitch, velocity) ->
                 // Generar 1-2 partículas por cada tecla activa en cada tick
@@ -49,7 +50,15 @@ fun PianoRollCanvas(
                     1, 3, 6, 8, 10 -> true
                     else -> false
                 }
-                val particleColor = if (isBlack) ElyPink else AuroraViolet
+                val particleColor = if (isBlack) {
+                    ElyPink
+                } else {
+                    when ((activeTracks[pitch] ?: 0) % 3) {
+                        0 -> AuroraViolet
+                        1 -> ElyGreen
+                        else -> ElyCream
+                    }
+                }
                 
                 // Necesitamos calcular el X aproximado de la nota
                 // Para esto pasaremos un disparador de partículas temporal

@@ -4,11 +4,19 @@ import java.io.File
 
 class DesktopLocalStorage : LocalStorage {
     private val stateFile: File = File(
+        System.getenv("APPDATA") ?: System.getProperty("user.home"),
+        "Ely-Tesia/state.txt"
+    )
+    private val legacyStateFile: File = File(
         System.getenv("LOCALAPPDATA") ?: System.getProperty("user.home"),
         "ElyTesia/state.txt"
     )
 
     override fun read(): String? = runCatching {
+        if (!stateFile.isFile && legacyStateFile.isFile) {
+            stateFile.parentFile?.mkdirs()
+            legacyStateFile.copyTo(stateFile, overwrite = false)
+        }
         stateFile.takeIf { it.isFile }?.readText()
     }.getOrNull()
 

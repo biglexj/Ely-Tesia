@@ -1,9 +1,9 @@
-# Ely-Tesia 1.0.0
+# Ely-Tesia 1.0.1
 
-Primera versión pública de Ely-Tesia, un visualizador y herramienta de
-práctica MIDI multiplataforma.
+Actualización de estabilidad centrada en la correspondencia entre el piano
+roll, el teclado MIDI y los colores de interpretación.
 
-## Novedades
+## Novedades y correcciones
 
 - Visualización de notas MIDI mediante un piano roll animado.
 - Teclado virtual de 88 teclas con rango configurable.
@@ -21,6 +21,15 @@ práctica MIDI multiplataforma.
 - Diseños independientes para escritorio y teléfonos.
 - Instalador MSI y APK de prueba.
 - Nuevo icono oficial de Ely-Tesia.
+- Correspondencia de colores por pista entre barras, partículas y teclas.
+- Sostenidos y bemoles iluminados en rosa.
+- Errores indicados en ámbar, sin utilizar rojo.
+- El color de una pulsación permanece fijado hasta soltar la tecla.
+- Resolución estable cuando varias pistas mantienen el mismo tono.
+- Corrección del sintetizador virtual y de la selección de audio en Windows.
+- Persistencia de biblioteca y preferencias fuera de la instalación, con
+  migración del estado anterior.
+- Paquete MSIX para Windows.
 
 ## Correcciones incluidas
 
@@ -42,11 +51,12 @@ práctica MIDI multiplataforma.
 - La separación manual por pistas/manos y el bucle A-B están planificados para
   versiones posteriores.
 
-## Archivos de la versión
+## Archivos de la versión 1.0.1
 
-- `ElyTesia-Windows-1.0.0.msi`
-- `ElyTesia-Windows-1.0.0.exe`
-- `ElyTesia-Android-1.0.0-debug.apk`
+- `ElyTesia-Windows-1.0.1.msi`
+- `ElyTesia-Windows-1.0.1.exe`
+- `ElyTesia-Windows-1.0.1.msix`
+- `ElyTesia-Android-1.0.1-debug.apk`
 - `SHA256SUMS.txt`
 
 ## Actualización e instalación
@@ -57,4 +67,4 @@ Las versiones futuras conservarán la identidad de actualización configurada.
 
 ## Licencia
 
-Ely-Tesia 1.0.0 se publica bajo la licencia MIT.
+Ely-Tesia 1.0.1 se publica bajo la licencia MIT.

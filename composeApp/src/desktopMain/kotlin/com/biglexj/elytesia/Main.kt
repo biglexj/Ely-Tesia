@@ -32,7 +32,7 @@ fun main() {
         icon = painterResource("elytesia-icon.png"),
         state = WindowState(size = DpSize(1280.dp, 820.dp))
     ) {
-        val midiManager = getPlatformMidiDeviceManager()
+        val midiManager = remember { getPlatformMidiDeviceManager() }
         val localStorage = remember { DesktopLocalStorage() }
         
         App(

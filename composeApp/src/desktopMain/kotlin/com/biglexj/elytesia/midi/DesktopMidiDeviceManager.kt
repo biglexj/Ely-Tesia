@@ -11,12 +11,13 @@ import kotlin.concurrent.thread
 // Sintetizador de Software Polyfónico de baja latencia para OpenJDK / JBR
 class SimpleSoftwareSynth {
     private val SAMPLE_RATE = 44100f
-    private var line: SourceDataLine? = null
+    @Volatile private var line: SourceDataLine? = null
     private val activeNotes = mutableMapOf<Int, ActiveNote>()
     private val sustainedNotes = mutableSetOf<Int>()
     private var sustainEnabled = false
     private var running = true
     private var synthThread: Thread? = null
+    private var selectedMixerName = "Sistema (Predeterminado)"
 
     class ActiveNote(val pitch: Int, val frequency: Double, val velocity: Int) {
         var phase = 0.0
@@ -176,6 +177,7 @@ class SimpleSoftwareSynth {
     }
 
     fun selectMixer(mixerName: String) {
+        if (mixerName == selectedMixerName && line?.isOpen == true) return
         try {
             val format = AudioFormat(SAMPLE_RATE, 16, 1, true, true)
             val info = DataLine.Info(SourceDataLine::class.java, format)
@@ -199,6 +201,7 @@ class SimpleSoftwareSynth {
             
             oldLine?.stop()
             oldLine?.close()
+            selectedMixerName = mixerName
             println("Salida de audio cambiada a: $mixerName")
         } catch (e: Exception) {
             println("Error al cambiar salida de audio: ${e.message}")

@@ -45,5 +45,6 @@ tmp/
 *.jks
 *.keystore
 *.p12
+*.pfx
 *.pem
 keystore.properties

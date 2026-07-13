@@ -29,7 +29,10 @@ enum class NoteLabelMode(val displayName: String) {
 @Composable
 fun PianoKeyboard(
     songActiveKeys: Map<Int, Int>, // Notas tocadas por la canción
+    songActiveTracks: Map<Int, Int> = emptyMap(),
     userActiveKeys: Set<Int>,      // Notas pulsadas físicamente por el usuario (o con el ratón)
+    userActiveTracks: Map<Int, Int> = emptyMap(),
+    wrongUserKeys: Set<Int> = emptySet(),
     onKeyAction: (pitch: Int, isPressed: Boolean) -> Unit, // Callback para Modo Libre
     minPitch: Int = 21,            // Nota mínima dinámica
     maxPitch: Int = 108,           // Nota máxima dinámica
@@ -163,22 +166,33 @@ fun PianoKeyboard(
             val rectSize = Size(whiteKeyWidth, height)
             
             val isUserActive = pitch in userActiveKeys
+            val isWrong = pitch in wrongUserKeys
             val isSongActive = pitch in songActiveKeys
             
             val fillBrush = when {
-                isUserActive -> {
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            ElyGreen.copy(alpha = 0.3f),
-                            ElyGreen
-                        )
-                    )
+                isWrong -> {
+                    Brush.verticalGradient(listOf(Color(0xFFFFD166).copy(alpha = 0.45f), Color(0xFFF59E0B)))
                 }
                 isSongActive -> {
+                    val trackColor = when ((songActiveTracks[pitch] ?: 0) % 3) {
+                        0 -> AuroraViolet
+                        1 -> ElyGreen
+                        else -> ElyCream
+                    }
+                    Brush.verticalGradient(listOf(trackColor.copy(alpha = 0.3f), trackColor))
+                }
+                isUserActive -> {
+                    val latchedColor = userActiveTracks[pitch]?.let { track ->
+                        when (track % 3) {
+                            0 -> AuroraViolet
+                            1 -> ElyGreen
+                            else -> ElyCream
+                        }
+                    } ?: ElyGreen
                     Brush.verticalGradient(
                         colors = listOf(
-                            AuroraViolet.copy(alpha = 0.3f),
-                            AuroraViolet
+                            latchedColor.copy(alpha = 0.3f),
+                            latchedColor
                         )
                     )
                 }
@@ -218,22 +232,27 @@ fun PianoKeyboard(
             val left = boundaryX - (blackKeyWidth / 2f)
             
             val isUserActive = pitch in userActiveKeys
+            val isWrong = pitch in wrongUserKeys
             val isSongActive = pitch in songActiveKeys
             
             val fillBrush = when {
-                isUserActive -> {
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            ElyGreen,
-                            ElyGreen.copy(alpha = 0.5f)
-                        )
-                    )
+                isWrong -> {
+                    Brush.verticalGradient(listOf(Color(0xFFFFD166), Color(0xFFF59E0B).copy(alpha = 0.55f)))
                 }
                 isSongActive -> {
                     Brush.verticalGradient(
                         colors = listOf(
                             ElyPink,
                             ElyPink.copy(alpha = 0.5f)
+                        )
+                    )
+                }
+                isUserActive -> {
+                    val latchedColor = if (pitch in userActiveTracks) ElyPink else ElyGreen
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            latchedColor,
+                            latchedColor.copy(alpha = 0.5f)
                         )
                     )
                 }
@@ -280,7 +299,7 @@ fun PianoKeyboard(
                 val layout = textMeasurer.measure(
                     text = label,
                     style = TextStyle(
-                        color = if (pitch in userActiveKeys || pitch in songActiveKeys) Color.White else Color(0xFF334155),
+                        color = if (pitch in userActiveKeys || pitch in songActiveKeys || pitch in wrongUserKeys) Color.White else Color(0xFF334155),
                         fontSize = if (whiteKeyWidth < 18f) 5.sp else 7.sp,
                         fontWeight = FontWeight.Bold
                     ),

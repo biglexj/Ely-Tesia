@@ -91,7 +91,10 @@ fun App(
     val songList = remember { mutableStateListOf<Song>() }
 
     val activeKeys = remember { mutableStateMapOf<Int, Int>() } // Notas activas de la reproducción
+    val activeKeyTracks = remember { mutableStateMapOf<Int, Int>() }
     val userActiveKeys = remember { mutableStateListOf<Int>() }   // Notas físicas o por mouse
+    val wrongUserKeys = remember { mutableStateListOf<Int>() }
+    val userKeyTracks = remember { mutableStateMapOf<Int, Int>() }
 
     // Grabación MIDI en tiempo real
     var isRecording by remember { mutableStateOf(false) }
@@ -124,6 +127,29 @@ fun App(
         if (!isRecording || pitch in recordingActiveNotes) return
         recordingActiveNotes[pitch] =
             (System.currentTimeMillis() - recordingStartMs).coerceAtLeast(0L) to velocity
+    }
+
+    fun evaluatePlayedPitch(pitch: Int) {
+        userKeyTracks.remove(pitch)
+        if (!isPlaying && !waitMode) return
+        val song = loadedSong ?: return
+        val toleranceMs = 180L
+        val expectedNote = song.notes
+            .filter { note -> note.pitch == pitch &&
+                currentTimeMs >= note.startTimeMs - toleranceMs &&
+                currentTimeMs <= note.startTimeMs + note.durationMs + toleranceMs
+            }
+            .maxWithOrNull(
+                compareBy<NoteEvent> { it.startTimeMs }
+                    .thenBy { -it.track }
+            )
+        if (expectedNote == null) {
+            if (pitch !in wrongUserKeys) wrongUserKeys.add(pitch)
+        } else {
+            wrongUserKeys.remove(pitch)
+            // El color queda fijado durante toda esta pulsación física.
+            userKeyTracks[pitch] = expectedNote.track
+        }
     }
 
     fun recordNoteOff(pitch: Int) {
@@ -293,6 +319,7 @@ fun App(
                                 mappingStep = 0
                             }
                         } else {
+                            evaluatePlayedPitch(pitch)
                             recordNoteOn(pitch, velocity)
                             if (pitch !in userActiveKeys) {
                                 userActiveKeys.add(pitch)
@@ -302,6 +329,8 @@ fun App(
                 },
                 onNoteOff = { pitch ->
                     scope.launch {
+                        wrongUserKeys.remove(pitch)
+                        userKeyTracks.remove(pitch)
                         recordNoteOff(pitch)
                         if (!mappingMode) {
                             userActiveKeys.remove(pitch)
@@ -402,8 +431,24 @@ fun App(
                         midiDeviceManager.playNoteDirect(note.pitch, 0)
                     }
                     
+                    // Una misma tecla puede seguir sostenida por varias pistas.
+                    // Para representarla elegimos la nota de inicio más reciente;
+                    // en un unísono exacto conservamos la pista de menor índice.
+                    val visibleActiveNotes = activeNow
+                        .groupBy { it.pitch }
+                        .mapValues { (_, notesAtPitch) ->
+                            notesAtPitch.maxWithOrNull(
+                                compareBy<NoteEvent> { it.startTimeMs }
+                                    .thenBy { -it.track }
+                            )!!
+                        }
+
+                    activeKeyTracks.clear()
+                    visibleActiveNotes.forEach { (pitch, note) -> activeKeyTracks[pitch] = note.track }
+                    // Publicar primero la pista evita que la UI pinte fugazmente
+                    // la nota con el color predeterminado al activarse.
                     activeKeys.clear()
-                    activeNow.forEach { activeKeys[it.pitch] = it.velocity }
+                    visibleActiveNotes.forEach { (pitch, note) -> activeKeys[pitch] = note.velocity }
                     
                     previousActiveNotes.clear()
                     previousActiveNotes.addAll(activeNow)
@@ -415,12 +460,13 @@ fun App(
             }
         } else {
             activeKeys.clear()
+            activeKeyTracks.clear()
             midiDeviceManager.stopAllNotes()
         }
     }
 
     // Offset visual para compensar latencia de renderizado
-    val visualTimeMs = if (isPlaying) currentTimeMs + 120L else currentTimeMs
+    val visualTimeMs = currentTimeMs
 
     ElyTesiaTheme {
         BoxWithConstraints(
@@ -457,6 +503,7 @@ fun App(
                 notes = loadedSong?.notes ?: emptyList(),
                 currentTimeMs = visualTimeMs,
                 activeKeys = activeKeys,
+                activeTracks = activeKeyTracks,
                 minPitch = minPitch,
                 maxPitch = maxPitch,
                 modifier = Modifier
@@ -1558,17 +1605,23 @@ fun App(
             // 5. Teclado Virtual / Interactivo
             PianoKeyboard(
                 songActiveKeys = activeKeys,
+                songActiveTracks = activeKeyTracks,
                 userActiveKeys = userActiveKeys.toSet(),
+                userActiveTracks = userKeyTracks,
+                wrongUserKeys = wrongUserKeys.toSet(),
                 noteLabelMode = noteLabelMode,
                 onKeyAction = { pitch, isPressed ->
                     if (isPressed) {
                         if (pitch !in userActiveKeys) {
                             userActiveKeys.add(pitch)
                         }
+                        evaluatePlayedPitch(pitch)
                         recordNoteOn(pitch, 90)
                         midiDeviceManager.playNoteDirect(pitch, 90)
                     } else {
                         userActiveKeys.remove(pitch)
+                        wrongUserKeys.remove(pitch)
+                        userKeyTracks.remove(pitch)
                         recordNoteOff(pitch)
                         midiDeviceManager.playNoteDirect(pitch, 0)
                     }
