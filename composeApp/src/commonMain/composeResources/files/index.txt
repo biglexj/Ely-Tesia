@@ -1,0 +1,4 @@
+﻿escala_do.mid|Escala Do Mayor (Prueba)|FACIL
+gymnopedie.mid|Gymnopédie No. 1 (Demo)|FACIL
+bella_ciao.mid|Bella Ciao (Demo)|INTERMEDIO
+bach_prelude.mid|Bach Prelude C-Major (Demo)|AVANZADO

@@ -7,6 +7,21 @@
 > - De igual manera, al alcanzar el límite de la versión menor `1.9.9` (o ante hitos de arquitectura significativos posteriores a `1.9.x`), se debe saltar obligatoriamente al siguiente número mayor completo, pasando a **`2.0.0`**. No se permiten números como `1.9.10` o `1.10.x`.
 > - **Nombres de Dulces para Versiones Mayores:** Cada versión mayor (ej. `1.0.0`, `2.0.0`) debe nombrarse con un nombre de dulce o postre al estilo de las versiones clásicas de Android en orden alfabético (ej. `v1.0.0 (Apple Pie Update)`, `v2.0.0 (Banana Bread Update)`). Este nombre debe quedar reflejado de manera coordinada en el título de `README.md`, en `RELEASE_NOTES.md` al documentar la release, y en los archivos de configuración del proyecto.
 
+### 🚀 v1.0.3 — **"Modo Libre y Gestión de Biblioteca" (patch)** (15/07/2026)
+
+Esta actualización añade un nuevo "Modo Libre" que oculta por completo los paneles de control y menús para ofrecer una visualización limpia del piano roll y teclado virtual, accesible a través de un discreto botón de reactivación. Además, se añade la opción de eliminar canciones de la biblioteca y del almacenamiento local persistente mediante un botón de papelera en la barra lateral.
+
+Se optimizó la interfaz móvil para dispositivos en orientación horizontal (landscape) ajustando el tamaño de textos, el espaciado de los botones y la altura del teclado virtual, asegurando que el contenido fluya sin superposiciones. También se mejoró el soporte de caracteres unicode (acentos y letra eñe) en la biblioteca de canciones de la versión de escritorio JVM y se corrigió el comportamiento del "Local Control" al alternar entre el sonido virtual y el físico.
+
+**Archivos y Paquetes:**
+- `ElyTesia-Windows-1.0.3.msi`
+- `ElyTesia-Windows-1.0.3.exe`
+- `ElyTesia-Windows-1.0.3.msix`
+- `ElyTesia-Android-1.0.3.apk`
+- `SHA256SUMS.txt`
+
+---
+
 ### 🚀 v1.0.2 — **"Banco de Instrumentos y Silenciado MIDI Local" (patch)** (12/07/2026)
 
 Esta actualización incorpora mejoras visuales de control y añade soporte para diversidad instrumental en el sintetizador. Se integró un banco inicial de 7 instrumentos (Piano Acústico, Piano Eléctrico, Órgano, Sintetizador Pad, Clavecín, Flauta y Bajo Sintetizado) seleccionables directamente desde la interfaz. 

@@ -33,6 +33,7 @@ import com.biglexj.elytesia.midi.InstrumentType
 import com.biglexj.elytesia.model.NoteEvent
 import com.biglexj.elytesia.model.ControlEvent
 import com.biglexj.elytesia.model.Song
+import com.biglexj.elytesia.model.Difficulty
 import com.biglexj.elytesia.storage.AppStateCodec
 import com.biglexj.elytesia.storage.LocalStorage
 import com.biglexj.elytesia.storage.NoOpLocalStorage
@@ -43,10 +44,11 @@ import com.biglexj.elytesia.ui.NoteLabelMode
 import com.biglexj.elytesia.ui.PianoRollCanvas
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import ely_tesia.composeapp.generated.resources.*
 
 enum class SidebarMode { BIBLIOTECA, INSTRUMENTOS }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, org.jetbrains.compose.resources.ExperimentalResourceApi::class)
 @Composable
 fun App(
     midiDeviceManager: MidiDeviceManager = remember { getPlatformMidiDeviceManager() },
@@ -56,7 +58,8 @@ fun App(
     onImportedSongConsumed: (() -> Unit)? = null,
     onExportMidiFile: ((Song) -> Boolean)? = null,
     onRequestExportMidiFile: ((Song) -> Unit)? = null,
-    localStorage: LocalStorage = NoOpLocalStorage
+    localStorage: LocalStorage = NoOpLocalStorage,
+    onParseMidiBytes: ((ByteArray, String) -> Song)? = null
 ) {
     val restoredState = remember(localStorage) { AppStateCodec.decode(localStorage.read()) }
     var stateInitialized by remember { mutableStateOf(false) }
@@ -277,16 +280,73 @@ fun App(
         audioDevices = midiDeviceManager.getAudioOutputs()
         
         val restoredSongs = restoredState?.songs.orEmpty()
+        val systemDemos = mutableListOf<Song>()
+        
+        runCatching {
+            val catalogBytes = Res.readBytes("files/catalog.json")
+            val catalogText = catalogBytes.decodeToString()
+            
+            // Dividir por bloques de objetos de canciones (delimitados por la llave de apertura)
+            val songBlocks = catalogText.split("{")
+            for (block in songBlocks) {
+                if (block.contains("\"title\"") && block.contains("\"file\"")) {
+                    val title = block.substringAfter("\"title\"").substringAfter("\"").substringBefore("\"").trim()
+                    val file = block.substringAfter("\"file\"").substringAfter("\"").substringBefore("\"").trim()
+                    val difficultyStr = if (block.contains("\"difficulty\"")) {
+                        block.substringAfter("\"difficulty\"").substringAfter("\"").substringBefore("\"").trim()
+                    } else "Fácil"
+                    
+                    val diff = when {
+                        difficultyStr.contains("fácil", ignoreCase = true) && difficultyStr.contains("intermedia", ignoreCase = true) -> Difficulty.INTERMEDIO
+                        difficultyStr.contains("fácil", ignoreCase = true) -> Difficulty.FACIL
+                        difficultyStr.contains("intermedia", ignoreCase = true) -> Difficulty.INTERMEDIO
+                        difficultyStr.contains("avanzad", ignoreCase = true) -> Difficulty.AVANZADO
+                        else -> Difficulty.FACIL
+                    }
+                    
+                    runCatching {
+                        val midiBytes = Res.readBytes("files/$file")
+                        val decodedSong = if (onParseMidiBytes != null) {
+                            onParseMidiBytes(midiBytes, title)
+                        } else {
+                            com.biglexj.elytesia.midi.StandardMidiCodec.decode(midiBytes, title)
+                        }
+                        systemDemos.add(
+                            decodedSong.copy(
+                                isDemo = true,
+                                difficulty = diff
+                            )
+                        )
+                    }.onFailure { err ->
+                        val size = runCatching { Res.readBytes("files/$file").size }.getOrElse { -1 }
+                        println("Error al cargar canción individual ($file), tamaño: $size bytes. Detalle: ${err.message}")
+                        err.printStackTrace()
+                    }
+                }
+            }
+        }.onFailure {
+            println("Catalog.json no cargado en absoluto: ${it.message}")
+        }
+
+        // 2. Si no hay demos cargadas desde recursos, usar las 4 demos integradas en código
+        if (systemDemos.isEmpty()) {
+            systemDemos.add(generateDemoSong())
+            systemDemos.add(generateScaleSong())
+            systemDemos.add(generateBellaCiaoSong())
+            systemDemos.add(generateGymnopedieSong())
+        }
+
         if (restoredSongs.isNotEmpty()) {
-            songList.addAll(restoredSongs)
-            loadedSong = restoredSongs.firstOrNull { it.name == restoredState?.selectedSongName }
-                ?: restoredSongs.first()
+            val customSongs = restoredSongs.filter { restored ->
+                systemDemos.none { it.name == restored.name }
+            }
+            songList.addAll(systemDemos)
+            songList.addAll(customSongs)
+            loadedSong = songList.firstOrNull { it.name == restoredState?.selectedSongName }
+                ?: songList.first()
         } else {
-            val bachDemo = generateDemoSong()
-            val scaleDemo = generateScaleSong()
-            songList.add(bachDemo)
-            songList.add(scaleDemo)
-            loadedSong = bachDemo
+            songList.addAll(systemDemos)
+            loadedSong = systemDemos.firstOrNull() ?: generateDemoSong()
         }
         stateInitialized = true
     }
@@ -1083,7 +1143,7 @@ fun App(
                                         contentPadding = PaddingValues(horizontal = 12.dp)
                                     ) {
                                         Text(
-                                            if (internalSoundEnabled) "Sonido Ely: ON" else "Sonido teclado",
+                                            if (internalSoundEnabled) "🎛️ Sonido Virtual" else "🎹 Sonido Teclado",
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 11.sp
                                         )
@@ -1670,7 +1730,7 @@ fun App(
                                     val song = songList[index]
                                     val isSelected = song == loadedSong
                                     
-                                    Box(
+                                    Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .clip(RoundedCornerShape(6.dp))
@@ -1679,18 +1739,22 @@ fun App(
                                                 width = 1.dp, 
                                                 color = if (isSelected) AuroraViolet else BorderGray.copy(alpha = 0.5f), 
                                                 shape = RoundedCornerShape(6.dp)
-                                            )
-                                            .clickable {
-                                                loadedSong = song
-                                                isPlaying = false
-                                                currentTimeMs = 0L
-                                                activeKeys.clear()
-                                                speedMultiplier = 1.0f
-                                                activeSidebar = null
-                                            }
-                                            .padding(12.dp)
+                                            ),
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Column {
+                                        Column(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .clickable {
+                                                    loadedSong = song
+                                                    isPlaying = false
+                                                    currentTimeMs = 0L
+                                                    activeKeys.clear()
+                                                    speedMultiplier = 1.0f
+                                                    activeSidebar = null
+                                                }
+                                                .padding(12.dp)
+                                        ) {
                                             Text(
                                                 text = song.name,
                                                 fontSize = 13.sp,
@@ -1701,18 +1765,56 @@ fun App(
                                             Spacer(modifier = Modifier.height(4.dp))
                                             Row(
                                                 modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.SpaceBetween
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
                                             ) {
-                                                Text(
-                                                    text = "${song.bpm.toInt()} BPM",
-                                                    fontSize = 10.sp,
-                                                    color = TextContrast
-                                                )
-                                                Text(
-                                                    text = "${song.durationMs / 1000}s",
-                                                    fontSize = 10.sp,
-                                                    color = TextContrast
-                                                )
+                                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                    Text(
+                                                        text = "${song.bpm.toInt()} BPM",
+                                                        fontSize = 10.sp,
+                                                        color = TextContrast
+                                                    )
+                                                    Text(
+                                                        text = "${song.durationMs / 1000}s",
+                                                        fontSize = 10.sp,
+                                                        color = TextContrast
+                                                    )
+                                                }
+                                                // Banderita de Dificultad
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                ) {
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .size(6.dp)
+                                                            .clip(RoundedCornerShape(3.dp))
+                                                            .background(Color(song.difficulty.colorHex))
+                                                    )
+                                                    Text(
+                                                        text = song.difficulty.displayName,
+                                                        fontSize = 9.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color(song.difficulty.colorHex)
+                                                    )
+                                                }
+                                            }
+                                        }
+
+                                        if (!song.isDemo) {
+                                            IconButton(
+                                                onClick = {
+                                                    songList.remove(song)
+                                                    if (loadedSong == song) {
+                                                        loadedSong = songList.firstOrNull()
+                                                        isPlaying = false
+                                                        currentTimeMs = 0L
+                                                        activeKeys.clear()
+                                                    }
+                                                },
+                                                modifier = Modifier.padding(end = 8.dp).size(32.dp)
+                                            ) {
+                                                Text("🗑️", fontSize = 14.sp)
                                             }
                                         }
                                     }
@@ -1910,7 +2012,7 @@ fun generateDemoSong(): Song {
         }
     }
 
-    return Song("Bach Prelude C-Major (Demo)", timeMs + 1000L, notes, 120.0)
+    return Song("Bach Prelude C-Major (Demo)", timeMs + 1000L, notes, 120.0, isDemo = true, difficulty = Difficulty.AVANZADO)
 }
 
 fun generateScaleSong(): Song {
@@ -1923,5 +2025,79 @@ fun generateScaleSong(): Song {
         notes.add(NoteEvent(note, timeMs, duration, 90, 1))
         timeMs += step
     }
-    return Song("Escala Do Mayor (Prueba)", timeMs + 400L, notes, 120.0)
+    return Song("Escala Do Mayor (Prueba)", timeMs + 400L, notes, 120.0, isDemo = true, difficulty = Difficulty.FACIL)
+}
+
+fun generateBellaCiaoSong(): Song {
+    val notes = mutableListOf<NoteEvent>()
+    var t = 800L
+    val quarter = 300L
+    
+    // Melodía famosa de "Bella Ciao"
+    val melody = listOf(
+        // Primera frase
+        Pair(57, quarter), Pair(60, quarter), Pair(62, quarter), Pair(64, quarter * 2), // La-Do-Re-Mi
+        Pair(57, quarter), Pair(60, quarter), Pair(62, quarter), Pair(64, quarter * 2), // La-Do-Re-Mi
+        Pair(57, quarter), Pair(60, quarter), Pair(62, quarter), Pair(64, quarter),     // La-Do-Re-Mi
+        Pair(67, quarter), Pair(69, quarter), Pair(67, quarter), Pair(64, quarter),     // Sol-La-Sol-Mi
+        Pair(69, quarter * 2),                                                          // La
+        // Segunda frase
+        Pair(69, quarter), Pair(69, quarter), Pair(69, quarter), Pair(67, quarter),     // La-La-La-Sol
+        Pair(64, quarter), Pair(62, quarter * 2),                                       // Mi-Re
+        Pair(60, quarter), Pair(62, quarter), Pair(64, quarter * 2),                    // Do-Re-Mi
+        Pair(62, quarter), Pair(60, quarter), Pair(57, quarter * 2)                     // Re-Do-La
+    )
+
+    for ((pitch, duration) in melody) {
+        notes.add(NoteEvent(pitch, t, duration - 30L, 95, 1))
+        // Acompañamiento simple de bajo
+        if (t % 1200 == 0L) {
+            notes.add(NoteEvent(pitch - 12, t, duration * 2, 70, 2))
+        }
+        t += duration
+    }
+    
+    return Song("Bella Ciao (Demo)", t + 1000L, notes, 125.0, isDemo = true, difficulty = Difficulty.INTERMEDIO)
+}
+
+fun generateGymnopedieSong(): Song {
+    val notes = mutableListOf<NoteEvent>()
+    var t = 1000L
+    val beat = 800L // 75 BPM aprox
+    
+    // Acompañamiento lento Satie (Bajo y luego acorde)
+    repeat(4) { idx ->
+        // Compás 1: G Maj
+        notes.add(NoteEvent(43, t, beat * 2, 80, 2)) // Bajo G
+        notes.add(NoteEvent(59, t + beat, beat * 2, 70, 2)) // B3
+        notes.add(NoteEvent(62, t + beat, beat * 2, 70, 2)) // D4
+        notes.add(NoteEvent(67, t + beat, beat * 2, 70, 2)) // G4
+        t += beat * 3
+        
+        // Compás 2: D Maj7
+        notes.add(NoteEvent(38, t, beat * 2, 80, 2)) // Bajo D
+        notes.add(NoteEvent(57, t + beat, beat * 2, 70, 2)) // A3
+        notes.add(NoteEvent(61, t + beat, beat * 2, 70, 2)) // C#4
+        notes.add(NoteEvent(66, t + beat, beat * 2, 70, 2)) // F#4
+        t += beat * 3
+    }
+    
+    // Melodía flotante arriba
+    var mt = 1000L + beat * 3
+    val melody = listOf(
+        Pair(69, beat * 3), // A4
+        Pair(71, beat * 3), // B4
+        Pair(74, beat * 3), // D5
+        Pair(76, beat * 3), // E5
+        Pair(71, beat * 3), // B4
+        Pair(67, beat * 3), // G4
+        Pair(64, beat * 6)  // E4
+    )
+    
+    for ((pitch, duration) in melody) {
+        notes.add(NoteEvent(pitch, mt, duration - 50L, 85, 1))
+        mt += duration
+    }
+    
+    return Song("Gymnopédie No. 1 (Demo)", mt + 1000L, notes, 72.0, isDemo = true, difficulty = Difficulty.FACIL)
 }

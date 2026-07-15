@@ -3,6 +3,7 @@ package com.biglexj.elytesia.storage
 import com.biglexj.elytesia.model.NoteEvent
 import com.biglexj.elytesia.model.ControlEvent
 import com.biglexj.elytesia.model.Song
+import com.biglexj.elytesia.model.Difficulty
 
 interface LocalStorage {
     fun read(): String?
@@ -41,7 +42,7 @@ object AppStateCodec {
             val controls = song.controls.joinToString(";") {
                 "${it.controller},${it.value},${it.timeMs},${it.channel}"
             }
-            appendLine("song=${escape(song.name)}|${song.durationMs}|${song.bpm}|$notes|$controls")
+            appendLine("song=${escape(song.name)}|${song.durationMs}|${song.bpm}|$notes|$controls|${song.difficulty.name}")
         }
     }
 
@@ -53,7 +54,7 @@ object AppStateCodec {
             val range = lines.firstOrNull { it.startsWith("range=") }
                 ?.removePrefix("range=")?.split(',')
             val songs = lines.filter { it.startsWith("song=") }.map { line ->
-                val fields = line.removePrefix("song=").split('|', limit = 5)
+                val fields = line.removePrefix("song=").split('|', limit = 6)
                 val notes = if (fields[3].isBlank()) emptyList() else fields[3].split(';').map { encoded ->
                     val n = encoded.split(',')
                     NoteEvent(n[0].toInt(), n[1].toLong(), n[2].toLong(), n[3].toInt(), n[4].toInt())
@@ -62,7 +63,10 @@ object AppStateCodec {
                     val c = encoded.split(',')
                     ControlEvent(c[0].toInt(), c[1].toInt(), c[2].toLong(), c[3].toInt())
                 }.orEmpty()
-                Song(unescape(fields[0]), fields[1].toLong(), notes, fields[2].toDouble(), controls)
+                val difficulty = fields.getOrNull(5)?.let { d ->
+                    Difficulty.entries.firstOrNull { it.name == d }
+                } ?: Difficulty.FACIL
+                Song(unescape(fields[0]), fields[1].toLong(), notes, fields[2].toDouble(), controls, isDemo = false, difficulty = difficulty)
             }
             SavedAppState(
                 minPitch = range?.getOrNull(0)?.toIntOrNull() ?: 21,

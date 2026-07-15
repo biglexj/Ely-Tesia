@@ -1,0 +1,194 @@
+[
+  {
+    "id": "happy_birthday",
+    "title": "Happy Birthday to You",
+    "composer": "Tradicional / Patty y Mildred Hill",
+    "version": "Arreglo demo simplificado",
+    "file": "happy_birthday.mid",
+    "format": "Standard MIDI File Type 1",
+    "tracks": [
+      "Metadatos",
+      "Melodía",
+      "Acompañamiento"
+    ],
+    "ticks_per_beat": 480,
+    "bpm": 96,
+    "time_signature": "3/4",
+    "key_signature": "F",
+    "difficulty": "Fácil",
+    "range": {
+      "lowest_note_midi": 60,
+      "highest_note_midi": 72
+    },
+    "approx_duration_seconds": 15.6,
+    "rights_note": "Composición de dominio público; arreglo MIDI propio."
+  },
+  {
+    "id": "campanita_twinkle_twinkle",
+    "title": "Twinkle, Twinkle, Little Star (Campanita)",
+    "composer": "Melodía tradicional francesa",
+    "version": "Tema completo simplificado",
+    "file": "campanita_twinkle_twinkle.mid",
+    "format": "Standard MIDI File Type 1",
+    "tracks": [
+      "Metadatos",
+      "Melodía",
+      "Acompañamiento"
+    ],
+    "ticks_per_beat": 480,
+    "bpm": 92,
+    "time_signature": "4/4",
+    "key_signature": "C",
+    "difficulty": "Fácil",
+    "range": {
+      "lowest_note_midi": 60,
+      "highest_note_midi": 69
+    },
+    "approx_duration_seconds": 31.3,
+    "rights_note": "Melodía tradicional de dominio público; arreglo MIDI propio."
+  },
+  {
+    "id": "la_bamba_tradicional",
+    "title": "La Bamba",
+    "composer": "Tradicional mexicano (son jarocho)",
+    "version": "Melodía y acompañamiento demo",
+    "file": "la_bamba_tradicional.mid",
+    "format": "Standard MIDI File Type 1",
+    "tracks": [
+      "Metadatos",
+      "Melodía",
+      "Acompañamiento"
+    ],
+    "ticks_per_beat": 480,
+    "bpm": 150,
+    "time_signature": "4/4",
+    "key_signature": "C",
+    "difficulty": "Fácil–intermedia",
+    "range": {
+      "lowest_note_midi": 60,
+      "highest_note_midi": 74
+    },
+    "approx_duration_seconds": 14.0,
+    "rights_note": "Versión tradicional; no reproduce el arreglo comercial de Ritchie Valens."
+  },
+  {
+    "id": "korobeiniki",
+    "title": "Korobeiniki",
+    "composer": "Tradicional ruso",
+    "version": "Tema principal simplificado",
+    "file": "korobeiniki.mid",
+    "format": "Standard MIDI File Type 1",
+    "tracks": [
+      "Metadatos",
+      "Melodía",
+      "Acompañamiento"
+    ],
+    "ticks_per_beat": 480,
+    "bpm": 138,
+    "time_signature": "4/4",
+    "key_signature": "Em",
+    "difficulty": "Intermedia",
+    "range": {
+      "lowest_note_midi": 68,
+      "highest_note_midi": 81
+    },
+    "approx_duration_seconds": 18.3,
+    "rights_note": "Melodía folclórica; arreglo propio, no derivado del audio de Tetris."
+  },
+  {
+    "id": "bella_ciao_tradicional",
+    "title": "Bella Ciao",
+    "composer": "Tradicional italiano",
+    "version": "Tema vocal simplificado",
+    "file": "bella_ciao_tradicional.mid",
+    "format": "Standard MIDI File Type 1",
+    "tracks": [
+      "Metadatos",
+      "Melodía",
+      "Acompañamiento"
+    ],
+    "ticks_per_beat": 480,
+    "bpm": 116,
+    "time_signature": "4/4",
+    "key_signature": "Am",
+    "difficulty": "Fácil–intermedia",
+    "range": {
+      "lowest_note_midi": 64,
+      "highest_note_midi": 77
+    },
+    "approx_duration_seconds": 12.2,
+    "rights_note": "Melodía tradicional; arreglo propio sin elementos de adaptaciones modernas."
+  },
+  {
+    "id": "morning_mood_grieg",
+    "title": "Morning Mood",
+    "composer": "Edvard Grieg",
+    "version": "Tema inicial adaptado para piano",
+    "file": "morning_mood_grieg.mid",
+    "format": "Standard MIDI File Type 1",
+    "tracks": [
+      "Metadatos",
+      "Melodía",
+      "Acompañamiento"
+    ],
+    "ticks_per_beat": 480,
+    "bpm": 72,
+    "time_signature": "6/8",
+    "key_signature": "E",
+    "difficulty": "Intermedia",
+    "range": {
+      "lowest_note_midi": 59,
+      "highest_note_midi": 76
+    },
+    "approx_duration_seconds": 26.7,
+    "rights_note": "Composición de dominio público; reducción MIDI propia."
+  },
+  {
+    "id": "vivaldi_primavera_tema",
+    "title": "La primavera - Las cuatro estaciones",
+    "composer": "Antonio Vivaldi",
+    "version": "Tema inicial simplificado para piano",
+    "file": "vivaldi_primavera_tema.mid",
+    "format": "Standard MIDI File Type 1",
+    "tracks": [
+      "Metadatos",
+      "Melodía",
+      "Acompañamiento"
+    ],
+    "ticks_per_beat": 480,
+    "bpm": 126,
+    "time_signature": "4/4",
+    "key_signature": "E",
+    "difficulty": "Intermedia",
+    "range": {
+      "lowest_note_midi": 64,
+      "highest_note_midi": 78
+    },
+    "approx_duration_seconds": 15.2,
+    "rights_note": "Composición de dominio público; arreglo MIDI propio."
+  },
+  {
+    "id": "el_condor_pasa_base",
+    "title": "El Condor Pasa",
+    "composer": "Daniel Alomía Robles",
+    "version": "Base melódica instrumental simplificada",
+    "file": "el_condor_pasa_base.mid",
+    "format": "Standard MIDI File Type 1",
+    "tracks": [
+      "Metadatos",
+      "Melodía",
+      "Acompañamiento"
+    ],
+    "ticks_per_beat": 480,
+    "bpm": 84,
+    "time_signature": "4/4",
+    "key_signature": "Em",
+    "difficulty": "Intermedia",
+    "range": {
+      "lowest_note_midi": 69,
+      "highest_note_midi": 83
+    },
+    "approx_duration_seconds": 34.3,
+    "rights_note": "Basado en la obra peruana original; no incluye letra ni arreglo de Simon & Garfunkel. Revisar derechos por territorio antes de distribución global."
+  }
+]

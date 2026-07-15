@@ -369,6 +369,8 @@ class SimpleSoftwareSynth {
 
 class DesktopMidiDeviceManager : MidiDeviceManager {
     private var activeDevice: MidiDevice? = null
+    // Dispositivo de salida del teclado físico, usado para alternar Local Control
+    private var activeOutputDevice: MidiDevice? = null
     private val softwareSynth = SimpleSoftwareSynth()
     @Volatile private var internalSoundEnabled = true
     private var currentInstrument = InstrumentType.PIANO_ACUSTICO
@@ -443,8 +445,9 @@ class DesktopMidiDeviceManager : MidiDeviceManager {
             }
             println("Teclado MIDI '$deviceName' conectado con éxito.")
 
-            // Intentar buscar el puerto de salida del teclado para enviarle "Local Control Off" (CC 122, valor 0)
-            // Esto silencia las cornetas/sonidos del teclado físico para escuchar SOLO el sonido virtual.
+            // Buscar el puerto de salida del teclado para gestionar Local Control.
+            // Local Control OFF (CC 122, valor 0): silencia el teclado físico → solo suena el sintetizador interno.
+            // Local Control ON  (CC 122, valor 127): restaura el audio del teclado → úsalo cuando el sintetizador esté apagado.
             try {
                 val outInfo = infos.firstOrNull { 
                     it.name == deviceName && 
@@ -453,14 +456,16 @@ class DesktopMidiDeviceManager : MidiDeviceManager {
                 if (outInfo != null) {
                     val outDev = MidiSystem.getMidiDevice(outInfo)
                     outDev.open()
+                    activeOutputDevice = outDev
+                    // Si el sonido interno está activo, silenciamos el hardware; si no, lo dejamos sonar.
+                    val localControlValue = if (internalSoundEnabled) 0 else 127
                     val msg = ShortMessage()
-                    msg.setMessage(ShortMessage.CONTROL_CHANGE, 0, 122, 0)
+                    msg.setMessage(ShortMessage.CONTROL_CHANGE, 0, 122, localControlValue)
                     outDev.receiver.send(msg, -1)
-                    outDev.close()
-                    println("Teclado físico silenciado de forma exitosa (Local Control: OFF).")
+                    println("Local Control del teclado físico configurado a: ${if (localControlValue == 0) "OFF (solo sintetizador)" else "ON (hardware activo)"}")
                 }
             } catch (e: Exception) {
-                println("Aviso: No se pudo silenciar el sonido interno del teclado físico (puede no soportar CC 122).")
+                println("Aviso: No se pudo configurar el Local Control del teclado físico (puede no soportarlo).")
             }
 
         } catch (e: Exception) {
@@ -469,6 +474,19 @@ class DesktopMidiDeviceManager : MidiDeviceManager {
     }
 
     override fun closeDevice() {
+        // Restaurar Local Control ON al desconectar para no dejar el teclado mudo
+        try {
+            activeOutputDevice?.let { outDev ->
+                if (outDev.isOpen) {
+                    val msg = ShortMessage()
+                    msg.setMessage(ShortMessage.CONTROL_CHANGE, 0, 122, 127)
+                    outDev.receiver.send(msg, -1)
+                    outDev.close()
+                    println("Local Control restaurado a ON al desconectar el teclado.")
+                }
+            }
+        } catch (e: Exception) {}
+        activeOutputDevice = null
         activeDevice?.close()
         activeDevice = null
     }
@@ -497,6 +515,20 @@ class DesktopMidiDeviceManager : MidiDeviceManager {
     override fun setInternalSoundEnabled(enabled: Boolean) {
         internalSoundEnabled = enabled
         if (!enabled) softwareSynth.allNotesOff()
+        // Sincronizar Local Control del teclado físico:
+        // - Sintetizador ON  → Local Control OFF (el hardware no suena, solo el synth)
+        // - Sintetizador OFF → Local Control ON  (el hardware suena por sus propios altavoces/salida de audio)
+        try {
+            activeOutputDevice?.let { outDev ->
+                if (outDev.isOpen) {
+                    val localControlValue = if (enabled) 0 else 127
+                    val msg = ShortMessage()
+                    msg.setMessage(ShortMessage.CONTROL_CHANGE, 0, 122, localControlValue)
+                    outDev.receiver.send(msg, -1)
+                    println("Local Control: ${if (localControlValue == 0) "OFF" else "ON"} (internalSound=$enabled)")
+                }
+            }
+        } catch (e: Exception) {}
     }
 
     override fun getAudioOutputs(): List<String> {

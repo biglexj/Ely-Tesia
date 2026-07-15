@@ -13,59 +13,22 @@ cambios de código.
 - **Idea:** propuesta registrada sin compromiso de implementación.
 - **Completado:** disponible en una versión publicada o candidata.
 
-## Versión 1.0.0
+---
 
-Estado: **Completado**
+## Por implementar
 
-- Visualizador MIDI y piano roll.
-- Teclado virtual interactivo.
-- Importación, entrada MIDI y exportación de grabaciones en Windows.
-- Importación y exportación MIDI mediante el selector nativo de Android.
-- Entrada MIDI Android mediante USB/OTG y Bluetooth.
-- Sintetizador Android de baja latencia.
-- Pedal sustain CC64 en entrada, grabación, reproducción y exportación.
-- Sintetizador interno y selección de salida de audio en Windows.
-- Biblioteca y preferencias persistentes.
-- Grabación de notas, velocidad y duración.
-- Cuenta previa configurable.
-- Modo de espera, metrónomo, control de BPM, reinicio y bucle.
-- Interfaz de escritorio y composición responsive para teléfonos.
-- Instalador MSI y APK de prueba.
-
-## Versión 1.0.1
-
-Estado: **Completado**
-
-- Sincronización temporal exacta entre barras y teclado.
-- Colores por pista conservados en barras, partículas y teclas.
-- Sostenidos y bemoles identificados en rosa.
-- Evaluación de notas incorrectas en ámbar con tolerancia temporal.
-- Retención del resultado y color durante toda la pulsación física.
-- Resolución de tonos simultáneos compartidos por varias pistas.
-- Corrección del sintetizador virtual y salida de audio de Windows.
-- Persistencia y migración segura de la biblioteca entre actualizaciones.
-- Empaquetado MSIX para Windows.
-
-## Versión 1.0.2
-
-Estado: **Completado**
-
-- Incorporación de un banco de instrumentos inicial (Piano Acústico, Piano Eléctrico, Órgano, Sintetizador Pad, Clavecín, Flauta y Bajo Sintetizado).
-- Correcciones de diseño visual en selectores y componentes de control.
-- Envío automático de comando MIDI "Local Control: OFF" para silenciar las bocinas internas de los teclados físicos conectados.
-- Soporte para audio estéreo real de 16 bits en Little Endian para compatibilidad total con auriculares Bluetooth/USB.
-
-## Próxima actualización - Estabilización
+### Versión 1.0.3 — Correcciones y pulido
 
 Estado: **Planificado**
 
+- Soporte correcto de caracteres españoles (acentos, ñ) en la biblioteca.
+- Toggle de Sonido Virtual sincronizado con Local Control del teclado MIDI físico.
+- Layout optimizado para modo horizontal en teléfonos.
+- Botón de Instrumentos accesible en portrait en la interfaz compacta.
 - Pruebas adicionales en distintos dispositivos Android reales.
 - Ajustes de latencia y tamaño de buffer por fabricante.
 - Mejoras de mensajes de conexión y errores MIDI.
-- Correcciones encontradas tras la publicación 1.0.0.
 - APK y AAB release firmados con una clave permanente.
-
-## Próximas funciones
 
 ### Práctica por secciones
 
@@ -96,6 +59,138 @@ Estado: **Planificado**
 - Marcadores de sección.
 - Indicadores de cambios de tempo y compás.
 
+### Nuevas plataformas
+
+Estado: **Planificado**
+
+La interfaz, los modelos, el parser MIDI, la biblioteca y gran parte de la
+lógica son compartidos mediante Kotlin y Compose Multiplatform. Cada nuevo
+sistema todavía requiere adaptadores propios para MIDI, audio, archivos,
+persistencia, firma y empaquetado.
+
+#### Linux
+
+Prioridad: **Alta**
+
+- Crear una entrada de aplicación y distribución JVM para Linux.
+- Verificar MIDI mediante ALSA, dispositivos USB y Bluetooth MIDI.
+- Probar el sintetizador y las salidas de audio en PipeWire y PulseAudio.
+- Adaptar los selectores de archivos y las rutas de datos a XDG.
+- Generar paquetes `.deb` para Debian, Ubuntu y derivados.
+- Generar paquetes `.rpm` para Fedora, openSUSE y derivados.
+- Generar un AppImage `x86_64` autocontenido como distribución principal.
+- Evaluar AppImage para ARM64 cuando exista infraestructura de pruebas.
+- Incluir archivo `.desktop`, icono, categorías y tipos MIME para `.mid` y `.midi`.
+- Probar en Arch Linux y una distribución basada en Arch.
+
+##### Arch Linux y Pacman
+
+- Mantener inicialmente una receta `PKGBUILD` dentro del repositorio.
+- Permitir que los usuarios construyan e instalen mediante `makepkg -si`.
+- Evaluar publicación en AUR después de estabilizar el paquete.
+- No depender de entrar inmediatamente en los repositorios oficiales de Arch.
+- Aceptar colaboradores que quieran mantener el `PKGBUILD` y validar nuevas versiones.
+
+##### Estrategia de compilación Linux
+
+- Construir los paquetes en una máquina o runner Linux.
+- Añadir un script `build-release-linux.sh` equivalente al script PowerShell.
+- Incorporar un workflow de GitHub Actions para `.deb`, `.rpm` y AppImage.
+- Publicar hashes SHA-256 junto a cada artefacto.
+- Probar el AppImage al menos en Debian/Ubuntu, Fedora y Arch/Manjaro.
+
+#### macOS
+
+Prioridad: **Media**
+
+- Crear paquetes `.dmg` y `.pkg` desde un equipo o runner macOS.
+- Probar dispositivos MIDI mediante CoreMIDI y los adaptadores JVM disponibles.
+- Adaptar audio, selector de archivos y directorios de datos de usuario.
+- Integrar el icono en formato `.icns`.
+- Firmar con Developer ID y completar notarización para evitar advertencias de Gatekeeper.
+- Probar Intel y Apple Silicon.
+- Evaluar un binario universal cuando el proceso de build sea estable.
+
+#### iOS y iPadOS
+
+Prioridad: **Media/Baja**
+
+- Añadir targets iOS a Kotlin Multiplatform y un proyecto contenedor de Xcode.
+- Reutilizar la UI Compose y adaptar la navegación a iPhone y iPad.
+- Implementar MIDI mediante CoreMIDI, incluyendo dispositivos USB y Bluetooth.
+- Implementar audio de baja latencia mediante AVAudioEngine u otra API nativa.
+- Usar el selector de documentos de iOS para importar y exportar MIDI.
+- Adaptar persistencia, rotación, multitarea y sesiones de audio.
+- Probar teclados conectados mediante adaptadores USB-C/Lightning.
+- Configurar firma, perfiles, TestFlight y distribución en App Store.
+
+#### Matriz prevista de artefactos
+
+| Plataforma | Artefactos principales | Entorno de build |
+|---|---|---|
+| Windows | EXE, MSI y MSIX | Windows + JDK 17 + WiX + Windows SDK |
+| Android | APK y AAB | JDK 17 + Android SDK |
+| Linux universal | AppImage | Linux x86_64 |
+| Debian/Ubuntu | DEB | Linux |
+| Fedora/openSUSE | RPM | Linux |
+| Arch Linux | PKGBUILD/AUR | Arch Linux |
+| macOS | DMG y PKG | macOS + JDK 17 |
+| iOS/iPadOS | IPA/TestFlight | macOS + Xcode |
+
+### Distribución
+
+Estado: **Planificado**
+
+- Publicación futura mediante Microsoft Store y WinGet.
+- APK firmado para distribución directa.
+- Android App Bundle para Google Play.
+- Firma de código para Windows.
+- Canal estable y canal de pruebas.
+- Automatización de builds y releases mediante GitHub Actions.
+- Publicación automática de hashes SHA-256.
+- AppImage, DEB, RPM y receta PKGBUILD/AUR para Linux.
+- Paquetes DMG/PKG firmados y notarizados para macOS.
+- TestFlight y App Store para iOS/iPadOS.
+
+---
+
+## Ideas y conceptos
+
+> Propuestas registradas sin compromiso de implementación. Pueden avanzar o descartarse según prioridad futura.
+
+### Sistema de colores y temas visuales
+
+Estado: **En evaluación**
+
+Separar la lógica de colores del código de UI para que el usuario pueda
+personalizar la paleta de la aplicación sin tocar código.
+
+- Colores independientes configurables para mano izquierda y mano derecha en el teclado virtual y en el piano roll.
+- Paleta de colores por pista MIDI configurable desde la interfaz.
+- Temas predefinidos seleccionables (Aurora, Clásico, Alto Contraste, etc.).
+- Persistencia de la configuración de colores en la biblioteca de preferencias.
+- Exportación e importación de temas personalizados.
+- Modo alto contraste para accesibilidad.
+
+### Rediseño visual para Android — Material Expressive
+
+Estado: **En evaluación**
+
+La interfaz de Android comparte actualmente el mismo diseño que Desktop. Para
+Android existe una oportunidad de aprovechar las APIs nativas de Material 3 /
+Material Expressive para una experiencia mucho más rica y nativa del ecosistema.
+
+- Migrar los componentes de Android a Material 3 con Motion y Shape Tokens.
+- Adoptar Material Expressive: ondas de tinta, transiciones de contenedor y
+  morfología de formas animadas al tocar teclas o abrir secciones.
+- Efectos visuales por toque: ripple extendido y retroalimentación háptica en
+  el teclado virtual.
+- Animaciones de entrada y salida en sidebars y modales con MotionLayout o la
+  API de animación de Compose.
+- Superficies tintadas dinámicas (Dynamic Color) tomando el color dominante del
+  tema activo.
+- Barra de navegación y estado adaptadas al tema oscuro de Ely-Tesia.
+
 ### Herramientas de aprendizaje
 
 Estado: **En evaluación**
@@ -107,7 +202,7 @@ Estado: **En evaluación**
 - Aumento automático de velocidad tras completar una repetición.
 - Objetivos diarios y tiempo total practicado.
 
-## Compatibilidad MIDI futura
+### Compatibilidad MIDI avanzada
 
 Estado: **En evaluación**
 
@@ -122,19 +217,30 @@ Estado: **En evaluación**
 - Archivos MIDI tipo 0, 1 y secuencias múltiples.
 - Evaluación futura de MIDI 2.0 y MPE.
 
-## Audio
+### Audio avanzado
 
 Estado: **En evaluación**
 
-- Instrumentos seleccionables.
 - Soporte de SoundFont.
 - Piano muestreado de mayor calidad.
 - Control de volumen maestro y por pista.
 - Reverb opcional y limitador configurable.
 - Medición y ajuste automático de latencia.
 - Motor Oboe para optimizar Android en dispositivos que lo necesiten.
+- Soporte de plugins VST3 (Windows/Linux/macOS) mediante puente JNI nativo.
 
-## Biblioteca y edición
+### Experiencia móvil
+
+Estado: **En evaluación**
+
+- Modo horizontal dedicado para piano roll.
+- Desplazamiento del teclado por octavas.
+- Rango visible de 24, 36, 49, 61 u 88 teclas.
+- Controles compactos durante la reproducción.
+- Compatibilidad con tabletas y pantallas plegables.
+- Mantener la pantalla activa durante una sesión.
+
+### Biblioteca y edición
 
 Estado: **Idea**
 
@@ -147,232 +253,52 @@ Estado: **Idea**
 - Importar y exportar colecciones.
 - Copia de seguridad y restauración.
 
-## Biblioteca comunitaria de archivos MIDI
+### Biblioteca comunitaria de archivos MIDI
 
 Estado: **Idea**
 
 Crear una biblioteca opcional para compartir archivos MIDI entre usuarios de
 Ely-Tesia con fines personales, educativos y no comerciales.
 
-### Propuesta técnica
+#### Propuesta técnica
 
-Supabase es la primera opción a evaluar porque permite mantener en un mismo
-servicio:
+Supabase es la primera opción a evaluar (Auth, PostgreSQL, Storage, RLS y Edge Functions).
+La aplicación nunca debe contener una `service key`. Todas las tablas estarán
+protegidas mediante políticas RLS; cada usuario solo podrá modificar o eliminar
+sus propias subidas.
 
-- Supabase Auth para cuentas y perfiles.
-- PostgreSQL para metadatos, licencias, favoritos, reportes y moderación.
-- Supabase Storage para almacenar los archivos `.mid`.
-- Row Level Security para controlar lectura, subida, edición y eliminación.
-- Edge Functions para validar archivos y ejecutar tareas de moderación.
+#### Información de cada publicación
 
-La aplicación nunca debe contener una `service key`. El cliente utilizará una
-clave pública y todas las tablas y objetos estarán protegidos mediante políticas
-RLS. Cada usuario solamente podrá modificar o eliminar sus propias subidas.
-
-### Información de cada publicación
-
-- Título de la pieza.
-- Compositor y arreglista, cuando corresponda.
-- Usuario que realiza la subida.
-- Descripción y etiquetas.
+- Título, compositor, arreglista, usuario que sube, descripción y etiquetas.
 - BPM, duración, número de pistas y canales.
 - Nivel de dificultad aproximado.
-- Fecha y versión del archivo.
-- Licencia seleccionada.
-- Fuente original o enlace de atribución.
-- Declaración de autoría o permiso.
-- Estado de moderación.
-- Hash SHA-256 para detectar archivos duplicados.
+- Licencia seleccionada, fuente original y declaración de autoría.
+- Estado de moderación y hash SHA-256 para detectar duplicados.
 
-### Licencias permitidas
-
-El hecho de compartir un archivo gratuitamente no elimina los derechos sobre
-la composición, el arreglo o la interpretación. Por ello, toda subida deberá
-elegir una licencia y confirmar que el usuario posee los derechos necesarios.
-
-Opciones iniciales a evaluar:
+#### Licencias permitidas
 
 - Obra original del usuario, permitida para uso personal y no comercial.
-- CC BY-NC 4.0.
-- CC BY-NC-SA 4.0.
+- CC BY-NC 4.0 / CC BY-NC-SA 4.0.
 - CC0 o dominio público verificable.
 - Archivo compartido con permiso expreso del autor o titular.
 
-No se ofrecerá una opción genérica como "encontrado en Internet". Ely-Tesia
-no concederá licencias sobre obras que pertenezcan a terceros.
+No se ofrecerá una opción genérica como "encontrado en Internet".
 
-### Reglas de publicación
+#### Reglas de publicación
 
-- Uso de la biblioteca exclusivamente personal, educativo y no comercial.
-- Aceptación de unas condiciones de subida antes de publicar.
-- Confirmación de que el usuario es autor o posee permiso suficiente.
-- Atribución visible y conservada al descargar o volver a compartir.
+- Uso exclusivamente personal, educativo y no comercial.
+- Confirmación de autoría o permiso suficiente antes de subir.
 - Prohibición de vender archivos descargados desde la plataforma.
-- Prohibición de subir obras comerciales sin autorización.
-- Sistema de reporte por derechos de autor, contenido incorrecto o spam.
-- Procedimiento de retirada y posibilidad de apelación.
-- Historial de cambios de licencia y metadatos.
+- Sistema de reporte y procedimiento de retirada con posibilidad de apelación.
 
-### Experiencia dentro de Ely-Tesia
+#### Decisiones pendientes
 
-- Explorar por nombre, compositor, dificultad, BPM y etiquetas.
-- Previsualizar metadatos antes de descargar.
-- Añadir una pieza directamente a la biblioteca local.
-- Favoritos y colecciones personales.
-- Descarga local para practicar sin conexión.
-- Indicador claro de licencia y atribución.
-- Enlace para reportar un archivo.
-- Perfil con las obras originales y arreglos compartidos por cada usuario.
-
-### Moderación y seguridad
-
-- Validar que el archivo sea realmente un Standard MIDI File.
-- Limitar tamaño, frecuencia y cantidad de subidas.
-- Rechazar ejecutables, archivos renombrados y contenido malformado.
-- Analizar metadatos y evitar nombres o enlaces peligrosos.
-- Detectar duplicados mediante hash sin asumir automáticamente que sean
-  infracciones.
-- Mantener publicaciones nuevas en revisión cuando sea necesario.
-- Registrar acciones administrativas y retiradas.
-
-### Decisiones pendientes
-
-- Confirmar si la biblioteca será pública o requerirá iniciar sesión para
-  descargar.
-- Definir quién puede moderar y resolver reclamaciones.
-- Revisar los términos legales antes de abrir subidas públicas.
+- ¿Pública o requiere sesión para descargar?
+- ¿Quién modera y resuelve reclamaciones?
+- Revisar términos legales antes de abrir subidas públicas.
 - Estimar almacenamiento, ancho de banda y límites del plan de Supabase.
-- Definir una alternativa de exportación o migración para no depender de un
-  único proveedor.
-- Decidir si los comentarios y calificaciones son necesarios en la primera
-  versión.
 
-## Experiencia móvil
-
-Estado: **En evaluación**
-
-- Modo horizontal dedicado para piano roll.
-- Desplazamiento del teclado por octavas.
-- Rango visible de 24, 36, 49, 61 u 88 teclas.
-- Controles compactos durante la reproducción.
-- Compatibilidad con tabletas y pantallas plegables.
-- Mantener la pantalla activa durante una sesión.
-
-## Nuevas plataformas
-
-Estado: **Planificado**
-
-La interfaz, los modelos, el parser MIDI, la biblioteca y gran parte de la
-lógica son compartidos mediante Kotlin y Compose Multiplatform. Cada nuevo
-sistema todavía requiere adaptadores propios para MIDI, audio, archivos,
-persistencia, firma y empaquetado.
-
-### Linux
-
-Prioridad: **Alta**
-
-- Crear una entrada de aplicación y distribución JVM para Linux.
-- Verificar MIDI mediante ALSA, dispositivos USB y Bluetooth MIDI.
-- Probar el sintetizador y las salidas de audio en PipeWire y PulseAudio.
-- Adaptar los selectores de archivos y las rutas de datos a XDG.
-- Generar paquetes `.deb` para Debian, Ubuntu y derivados.
-- Generar paquetes `.rpm` para Fedora, openSUSE y derivados.
-- Generar un AppImage `x86_64` autocontenido como distribución principal y
-  agnóstica de la distribución.
-- Evaluar AppImage para ARM64 cuando exista infraestructura de pruebas.
-- Incluir archivo `.desktop`, icono, categorías y tipos MIME para `.mid` y
-  `.midi`.
-- Probar en Arch Linux y una distribución basada en Arch.
-
-#### Arch Linux y Pacman
-
-- Mantener inicialmente una receta `PKGBUILD` dentro del repositorio.
-- Permitir que los usuarios construyan e instalen mediante `makepkg -si`.
-- Evaluar publicación en AUR después de estabilizar el paquete.
-- No depender de entrar inmediatamente en los repositorios oficiales de Arch.
-- Aceptar colaboradores que quieran mantener el `PKGBUILD` y validar nuevas
-  versiones.
-
-#### Estrategia de compilación Linux
-
-- Construir los paquetes en una máquina o runner Linux; no intentar generar
-  paquetes nativos Linux desde Windows.
-- Añadir un script `build-release-linux.sh` equivalente al script PowerShell.
-- Incorporar un workflow de GitHub Actions para `.deb`, `.rpm` y AppImage.
-- Publicar hashes SHA-256 junto a cada artefacto.
-- Probar el AppImage al menos en Debian/Ubuntu, Fedora y Arch/Manjaro.
-
-### macOS
-
-Prioridad: **Media**
-
-- Crear paquetes `.dmg` y `.pkg` desde un equipo o runner macOS.
-- Probar dispositivos MIDI mediante CoreMIDI y los adaptadores JVM disponibles.
-- Implementar un adaptador nativo si la ruta JVM no ofrece latencia o
-  compatibilidad suficientes.
-- Adaptar audio, selector de archivos y directorios de datos de usuario.
-- Integrar el icono en formato `.icns`.
-- Firmar con Developer ID y completar notarización para evitar advertencias de
-  Gatekeeper.
-- Probar Intel y Apple Silicon.
-- Evaluar un binario universal cuando el proceso de build sea estable.
-
-### iOS y iPadOS
-
-Prioridad: **Media/Baja**
-
-- Añadir targets iOS a Kotlin Multiplatform y un proyecto contenedor de Xcode.
-- Reutilizar la UI Compose y adaptar la navegación a iPhone y iPad.
-- Implementar MIDI mediante CoreMIDI, incluyendo dispositivos USB y Bluetooth.
-- Implementar audio de baja latencia mediante AVAudioEngine u otra API nativa.
-- Usar el selector de documentos de iOS para importar y exportar MIDI.
-- Adaptar persistencia, rotación, multitarea y sesiones de audio.
-- Probar teclados conectados mediante adaptadores USB-C/Lightning.
-- Configurar firma, perfiles, TestFlight y distribución en App Store.
-- Requerir macOS y Xcode para compilar, probar y publicar.
-
-### Matriz prevista de artefactos
-
-| Plataforma | Artefactos principales | Entorno de build |
-|---|---|---|
-| Windows | EXE, MSI y MSIX | Windows + JDK 17 + WiX + Windows SDK |
-| Android | APK y AAB | JDK 17 + Android SDK |
-| Linux universal | AppImage | Linux x86_64 |
-| Debian/Ubuntu | DEB | Linux |
-| Fedora/openSUSE | RPM | Linux |
-| Arch Linux | PKGBUILD/AUR | Arch Linux |
-| macOS | DMG y PKG | macOS + JDK 17 |
-| iOS/iPadOS | IPA/TestFlight | macOS + Xcode |
-
-### Colaboración comunitaria
-
-- Etiquetar issues por plataforma y tipo de paquete.
-- Documentar cómo reproducir cada build desde cero.
-- Aceptar mantenedores voluntarios para AUR, RPM, Homebrew y pruebas de
-  hardware.
-- Evitar declarar una plataforma estable sin una persona o entorno capaz de
-  probar cada release.
-- Mantener los adaptadores de plataforma separados de la lógica musical
-  compartida.
-
-## Distribución
-
-Estado: **Planificado**
-
-- Instaladores EXE/MSI y paquete MSIX para Windows. **Completado**
-- Publicación futura mediante Microsoft Store y WinGet.
-- APK firmado para distribución directa.
-- Android App Bundle para Google Play.
-- Firma de código para Windows.
-- Canal estable y canal de pruebas.
-- Automatización de builds y releases mediante GitHub Actions.
-- Publicación automática de hashes SHA-256.
-- Builds nativos independientes para Windows, Linux y macOS.
-- AppImage, DEB, RPM y receta PKGBUILD/AUR.
-- Paquetes DMG/PKG firmados y notarizados para macOS.
-- TestFlight y App Store para iOS/iPadOS.
-
-## Ideas abiertas
+### Ideas abiertas
 
 Estado: **Idea**
 
@@ -385,6 +311,48 @@ Estado: **Idea**
 - Generación de ejercicios a partir de una canción.
 - Atajos de teclado configurables.
 - Control mediante pedales o botones MIDI asignables.
+
+---
+
+## Completado
+
+### Versión 1.0.0
+
+- Visualizador MIDI y piano roll.
+- Teclado virtual interactivo.
+- Importación, entrada MIDI y exportación de grabaciones en Windows.
+- Importación y exportación MIDI mediante el selector nativo de Android.
+- Entrada MIDI Android mediante USB/OTG y Bluetooth.
+- Sintetizador Android de baja latencia.
+- Pedal sustain CC64 en entrada, grabación, reproducción y exportación.
+- Sintetizador interno y selección de salida de audio en Windows.
+- Biblioteca y preferencias persistentes.
+- Grabación de notas, velocidad y duración.
+- Cuenta previa configurable.
+- Modo de espera, metrónomo, control de BPM, reinicio y bucle.
+- Interfaz de escritorio y composición responsive para teléfonos.
+- Instalador MSI y APK de prueba.
+
+### Versión 1.0.1
+
+- Sincronización temporal exacta entre barras y teclado.
+- Colores por pista conservados en barras, partículas y teclas.
+- Sostenidos y bemoles identificados en rosa.
+- Evaluación de notas incorrectas en ámbar con tolerancia temporal.
+- Retención del resultado y color durante toda la pulsación física.
+- Resolución de tonos simultáneos compartidos por varias pistas.
+- Corrección del sintetizador virtual y salida de audio de Windows.
+- Persistencia y migración segura de la biblioteca entre actualizaciones.
+- Empaquetado MSIX para Windows.
+
+### Versión 1.0.2
+
+- Banco de instrumentos inicial (Piano Acústico, Piano Eléctrico, Órgano, Sintetizador Pad, Clavecín, Flauta y Bajo Sintetizado).
+- Correcciones de diseño visual en selectores y componentes de control.
+- Envío automático de "Local Control: OFF" para silenciar bocinas internas de teclados físicos conectados.
+- Soporte para audio estéreo real de 16 bits en Little Endian para compatibilidad con auriculares Bluetooth/USB.
+
+---
 
 ## Criterios para priorizar
 
@@ -399,9 +367,6 @@ Antes de aprobar una función se valorará:
 7. Posibilidad de implementarla de forma opcional y no intrusiva.
 
 ## Plantilla para nuevas propuestas
-
-Copiar esta sección al final de `Ideas abiertas` o utilizarla en una issue de
-GitHub:
 
 ```markdown
 ### Nombre de la propuesta

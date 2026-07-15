@@ -26,7 +26,8 @@ object StandardMidiCodec {
         val controls = mutableListOf<RawControl>()
 
         repeat(trackCount) { trackIndex ->
-            require(reader.ascii(4) == "MTrk") { "Pista MIDI no válida" }
+            val sig = reader.ascii(4)
+            require(sig == "MTrk") { "Pista MIDI no válida: se esperaba MTrk pero se leyó '$sig' en posición ${reader.position - 4}" }
             val trackEnd = reader.position + reader.u32().toInt()
             var tick = 0L
             var runningStatus = 0
@@ -100,7 +101,8 @@ object StandardMidiCodec {
         val duration = decoded.maxOfOrNull { it.startTimeMs + it.durationMs } ?: 0L
         val bpm = 60_000_000.0 / (tempoMap.firstOrNull()?.mpq ?: 500_000)
         val decodedControls = controls.map { ControlEvent(it.controller, it.value, tickToMs(it.tick), it.channel) }
-        return Song(name.substringBeforeLast('.').replace('_', ' ').replace('-', ' '), duration, decoded, bpm, decodedControls)
+        val parsedSong = Song(name.substringBeforeLast('.').replace('_', ' ').replace('-', ' '), duration, decoded, bpm, decodedControls)
+        return parsedSong.copy(difficulty = parsedSong.calculateAutoDifficulty())
     }
 
     fun encode(song: Song): ByteArray {

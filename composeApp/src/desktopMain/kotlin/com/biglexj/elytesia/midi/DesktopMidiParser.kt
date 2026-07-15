@@ -171,6 +171,18 @@ object DesktopMidiParser {
         )
     }
 
+    fun parseMidiBytes(bytes: ByteArray, name: String): Song {
+        val tempFile = File.createTempFile("elytesia_temp_", ".mid")
+        tempFile.deleteOnExit()
+        tempFile.writeBytes(bytes)
+        try {
+            val song = parseMidiFile(tempFile)
+            return song.copy(name = name)
+        } finally {
+            tempFile.delete()
+        }
+    }
+
     fun generateSampleMidiFile(file: File) {
         val sequence = Sequence(Sequence.PPQ, 24)
         val track = sequence.createTrack()

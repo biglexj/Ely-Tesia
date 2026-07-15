@@ -54,8 +54,8 @@ android {
         applicationId = "com.biglexj.elytesia"
         minSdk = 24
         targetSdk = 34
-        versionCode = 3
-        versionName = "1.0.2"
+        versionCode = 5
+        versionName = "1.0.4"
     }
     
     compileOptions {
@@ -73,13 +73,13 @@ compose.desktop {
                 org.jetbrains.compose.desktop.application.dsl.TargetFormat.Exe
             )
             packageName = "ElyTesia"
-            packageVersion = "1.0.2"
+            packageVersion = "1.0.4"
             vendor = "biglexj"
 
             windows {
                 iconFile.set(project.file("src/desktopMain/resources/elytesia.ico"))
-                msiPackageVersion = "1.0.2"
-                exePackageVersion = "1.0.2"
+                msiPackageVersion = "1.0.4"
+                exePackageVersion = "1.0.4"
                 upgradeUuid = "28da0bdd-0ec9-3096-9fe8-2c59b53ec0ab"
                 shortcut = true
                 menu = true
@@ -88,5 +88,17 @@ compose.desktop {
                 perUserInstall = true
             }
         }
+    }
+}
+
+val copyMidiDemosTask = tasks.register<Copy>("copyMidiDemos") {
+    from(project.rootDir.resolve("midi_demos"))
+    into(project.projectDir.resolve("src/commonMain/composeResources/files"))
+    include("**/*")
+}
+
+tasks.configureEach {
+    if (name != "copyMidiDemos") {
+        dependsOn(copyMidiDemosTask)
     }
 }

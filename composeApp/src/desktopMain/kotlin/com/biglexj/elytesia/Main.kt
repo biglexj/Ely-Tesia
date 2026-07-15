@@ -25,6 +25,31 @@ fun main() {
         }
     }
 
+    val midiDemosDir = File("midi_demos")
+    if (midiDemosDir.exists() && midiDemosDir.isDirectory) {
+        val filesToCheck = listOf("bach_prelude.mid", "escala_do.mid", "bella_ciao.mid", "gymnopedie.mid")
+        val needsRecreation = filesToCheck.any {
+            val f = File(midiDemosDir, it)
+            !f.exists() || f.length() < 100
+        }
+        if (needsRecreation) {
+            try {
+                val bach = generateDemoSong()
+                val scale = generateScaleSong()
+                val bella = generateBellaCiaoSong()
+                val gymnopedie = generateGymnopedieSong()
+
+                DesktopMidiParser.writeMidiFile(bach, File(midiDemosDir, "bach_prelude.mid"))
+                DesktopMidiParser.writeMidiFile(scale, File(midiDemosDir, "escala_do.mid"))
+                DesktopMidiParser.writeMidiFile(bella, File(midiDemosDir, "bella_ciao.mid"))
+                DesktopMidiParser.writeMidiFile(gymnopedie, File(midiDemosDir, "gymnopedie.mid"))
+                println("Canciones demo iniciales (escala, gymnopedie, bella ciao, bach) generadas físicamente en midi_demos/")
+            } catch (e: Exception) {
+                println("Error al auto-poblar demos iniciales: ${e.message}")
+            }
+        }
+    }
+
     application {
         Window(
         onCloseRequest = ::exitApplication,
@@ -38,6 +63,7 @@ fun main() {
         App(
             midiDeviceManager = midiManager,
             localStorage = localStorage,
+            onParseMidiBytes = { bytes, name -> DesktopMidiParser.parseMidiBytes(bytes, name) },
             onLoadMidiFile = {
                 val fileDialog = FileDialog(null as Frame?, "Seleccionar Archivo MIDI", FileDialog.LOAD)
                 fileDialog.file = "*.mid;*.midi"
