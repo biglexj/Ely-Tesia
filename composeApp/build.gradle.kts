@@ -1,4 +1,4 @@
-plugins {
+﻿plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.multiplatform)
@@ -54,8 +54,8 @@ android {
         applicationId = "com.biglexj.elytesia"
         minSdk = 24
         targetSdk = 34
-        versionCode = 5
-        versionName = "1.0.4"
+        versionCode = 4
+        versionName = "1.0.3"
     }
     
     compileOptions {
@@ -73,13 +73,13 @@ compose.desktop {
                 org.jetbrains.compose.desktop.application.dsl.TargetFormat.Exe
             )
             packageName = "ElyTesia"
-            packageVersion = "1.0.4"
+            packageVersion = "1.0.3"
             vendor = "biglexj"
 
             windows {
                 iconFile.set(project.file("src/desktopMain/resources/elytesia.ico"))
-                msiPackageVersion = "1.0.4"
-                exePackageVersion = "1.0.4"
+                msiPackageVersion = "1.0.3"
+                exePackageVersion = "1.0.3"
                 upgradeUuid = "28da0bdd-0ec9-3096-9fe8-2c59b53ec0ab"
                 shortcut = true
                 menu = true

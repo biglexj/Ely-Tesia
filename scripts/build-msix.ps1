@@ -30,7 +30,10 @@ if (-not $makeAppx) {
 
 $appImage = Join-Path $root 'composeApp\build\compose\binaries\main\app\ElyTesia'
 if (-not (Test-Path (Join-Path $appImage 'ElyTesia.exe'))) {
-    & (Join-Path $root 'gradlew.bat') :composeApp:createDistributable
+    $gradleArgs = @()
+    if ($env:JAVA_HOME) { $gradleArgs += "-Dorg.gradle.java.home=$env:JAVA_HOME" }
+    $gradleArgs += ":composeApp:createDistributable"
+    & (Join-Path $root 'gradlew.bat') @gradleArgs
     if ($LASTEXITCODE -ne 0) { throw "Gradle terminó con código $LASTEXITCODE" }
 }
 

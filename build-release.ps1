@@ -1,4 +1,4 @@
-param(
+﻿param(
     # Versión a publicar. Si se omite, se lee la versión actual de build.gradle.kts y se incrementa el patch.
     [string]$Version,
     # Mensaje del release en GitHub. Si se omite, se genera uno por defecto.
@@ -97,7 +97,7 @@ $env:ANDROID_HOME = $androidSdk
 Write-Host ""
 Write-Host "[2/7] Compilando artefactos..." -ForegroundColor Yellow
 New-Item -ItemType Directory -Force $releaseDir | Out-Null
-Get-ChildItem $releaseDir -File -ErrorAction SilentlyContinue | Remove-Item -Force
+Get-ChildItem $releaseDir -File -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
 
 $tasks = @()
 if (-not $SkipWindows) { $tasks += ":composeApp:packageMsi"; $tasks += ":composeApp:packageExe" }
