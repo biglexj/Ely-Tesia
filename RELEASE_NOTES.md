@@ -1,11 +1,23 @@
 # 🚀 Ely-Tesia - Historial de Versiones
-📌 **Versión actual: `1.0.2` · Versión mínima requerida: `1.0.0`**
+📌 **Versión actual: `1.0.5` · Versión mínima requerida: `1.0.0`**
 
 > [!IMPORTANT]
 > **Regla del .9 para Versionado:**
 > - Nunca se debe pasar de una versión de parche `.9` (ej. de `1.0.9` no se pasa a `1.0.10`). Al alcanzar el límite del parche `.9`, se incrementa el número menor/secundario (ej. pasando a `1.1.0`).
 > - De igual manera, al alcanzar el límite de la versión menor `1.9.9` (o ante hitos de arquitectura significativos posteriores a `1.9.x`), se debe saltar obligatoriamente al siguiente número mayor completo, pasando a **`2.0.0`**. No se permiten números como `1.9.10` o `1.10.x`.
 > - **Nombres de Dulces para Versiones Mayores:** Cada versión mayor (ej. `1.0.0`, `2.0.0`) debe nombrarse con un nombre de dulce o postre al estilo de las versiones clásicas de Android en orden alfabético (ej. `v1.0.0 (Apple Pie Update)`, `v2.0.0 (Banana Bread Update)`). Este nombre debe quedar reflejado de manera coordinada en el título de `README.md`, en `RELEASE_NOTES.md` al documentar la release, y en los archivos de configuración del proyecto.
+
+### 🚀 v1.0.5 — **"Release Android estable y arquitectura ordenada" (patch)** (16/07/2026)
+
+Android genera ahora APK y AAB firmados con una identidad permanente, versión interna 6 y validaciones que bloquean artefactos sin firma o con metadatos incorrectos. Debido a que las compilaciones Android anteriores usaban una firma debug o no tenían firma, puede ser necesario desinstalarlas una sola vez antes de instalar 1.0.5; las actualizaciones posteriores conservarán la nueva identidad.
+
+La composición compartida se reorganizó en `app`, `core`, `feature` y adaptadores `platform`; `App.kt` quedó reducido a un punto de entrada de 35 líneas y la lógica determinista del reproductor dispone de pruebas. Se añadió progreso interactivo con tiempo, acceso a Instrumentos en móvil, mejor adaptación horizontal, pantalla activa durante la práctica y mensajes visibles para errores de dispositivos.
+
+La misma 1.0.5 incorpora un sistema de temas comunitarios JSON con validación y persistencia, galería de Aurora, Clásico y Alto Contraste, importación/exportación nativa en Android y Windows, y colores separados para manos, teclas blancas, negras/bemoles, estados de pulsación, errores, estelas y partículas. La interfaz usa Material 3 con formas y transiciones expresivas; Android 12 o superior puede aplicar Dynamic Color a la interfaz sin sustituir los colores musicales del tema.
+
+La revisión final corrige la lectura de archivos MIDI tipo 1 con varias pistas, restaura las 12 canciones incluidas con duraciones y reproducción funcionales y migra entradas duplicadas de versiones de prueba. En Android, la barra de progreso aparece únicamente al reproducir, los controles están centrados y el teclado virtual admite zoom multitáctil: separar los dedos agranda las teclas y pellizcar muestra una extensión mayor, manteniendo teclado y piano roll alineados.
+
+---
 
 ### 🚀 v1.0.3 — **"Modo Libre y Gestión de Biblioteca" (patch)** (15/07/2026)
 

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://elytesia.app/schemas/theme-v1.schema.json", "schemaVersion": 1,
+  "id": "com.biglexj.classic-community-example", "name": "Clásico Community", "author": "biglexj",
+  "description": "Ejemplo de concierto en marfil y granate.", "version": "1.0.0", "license": "CC0-1.0", "mode": "dark",
+  "material": {
+    "primary": "#A43D52", "onPrimary": "#FFFFFF", "primaryContainer": "#5A1727", "onPrimaryContainer": "#FFD9DF",
+    "secondary": "#3E6C8C", "onSecondary": "#FFFFFF", "secondaryContainer": "#18364A", "onSecondaryContainer": "#C9E6FF",
+    "tertiary": "#D5A021", "onTertiary": "#261A00", "background": "#171411", "onBackground": "#F5EEE4",
+    "surface": "#24201C", "onSurface": "#F5EEE4", "surfaceVariant": "#3A342E", "onSurfaceVariant": "#F5EEE4",
+    "error": "#FFB4AB", "onError": "#690005", "outline": "#D8CEC3"
+  },
+  "music": {
+    "leftHand": "#3E8EAF", "rightHand": "#B8485F", "neutralTrack": "#D5A021", "whiteKey": "#F1E5D2",
+    "whiteKeyPressed": "#3E8EAF", "blackKey": "#191512", "blackKeyPressed": "#B8485F", "correctNote": "#70B77E",
+    "wrongNote": "#FFB347", "waitingNote": "#D5A021", "particleLeft": "#3E8EAFCC", "particleRight": "#B8485FCC"
+  },
+  "effects": { "pressedGlow": 0.7, "noteTrail": 0.5, "particleIntensity": 0.65, "expressiveMotion": true }
+}

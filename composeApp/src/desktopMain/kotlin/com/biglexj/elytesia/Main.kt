@@ -4,6 +4,9 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.painterResource
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
@@ -59,10 +62,13 @@ fun main() {
     ) {
         val midiManager = remember { getPlatformMidiDeviceManager() }
         val localStorage = remember { DesktopLocalStorage() }
+        var importedThemeJson by remember { mutableStateOf<String?>(null) }
         
         App(
             midiDeviceManager = midiManager,
             localStorage = localStorage,
+            showProgressWhenIdle = false,
+            simplifyPlaybackChrome = true,
             onParseMidiBytes = { bytes, name -> DesktopMidiParser.parseMidiBytes(bytes, name) },
             onLoadMidiFile = {
                 val fileDialog = FileDialog(null as Frame?, "Seleccionar Archivo MIDI", FileDialog.LOAD)
@@ -92,6 +98,28 @@ fun main() {
                         DesktopMidiParser.writeMidiFile(song, File(fileDialog.directory, chosenName))
                     }.onFailure { println("Error al exportar MIDI: ${it.message}") }.isSuccess
                 } else false
+            },
+            onRequestThemeFile = {
+                val dialog = FileDialog(null as Frame?, "Importar tema Ely-Tesia", FileDialog.LOAD)
+                dialog.file = "*.elytheme.json;*.json"
+                dialog.isVisible = true
+                if (dialog.directory != null && dialog.file != null) {
+                    runCatching { File(dialog.directory, dialog.file).readText() }
+                        .onSuccess { importedThemeJson = it }
+                        .onFailure { println("Error al importar tema: ${it.message}") }
+                }
+            },
+            importedThemeJson = importedThemeJson,
+            onImportedThemeConsumed = { importedThemeJson = null },
+            onRequestExportTheme = { fileName, json ->
+                val dialog = FileDialog(null as Frame?, "Exportar tema Ely-Tesia", FileDialog.SAVE)
+                dialog.file = fileName
+                dialog.isVisible = true
+                if (dialog.directory != null && dialog.file != null) {
+                    val chosenName = if (dialog.file.endsWith(".json", true)) dialog.file else "${dialog.file}.elytheme.json"
+                    runCatching { File(dialog.directory, chosenName).writeText(json) }
+                        .onFailure { println("Error al exportar tema: ${it.message}") }
+                }
             }
         )
     }

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://elytesia.app/schemas/theme-v1.schema.json",
+  "schemaVersion": 1,
+  "id": "com.biglexj.aurora-community-example",
+  "name": "Aurora Community",
+  "author": "biglexj",
+  "description": "Ejemplo editable basado en Aurora.",
+  "version": "1.0.0",
+  "license": "CC0-1.0",
+  "mode": "dark",
+  "material": {
+    "primary": "#5B4CFF", "onPrimary": "#FFFFFF", "primaryContainer": "#302A78", "onPrimaryContainer": "#E5E1FF",
+    "secondary": "#00C7B1", "onSecondary": "#001F1B", "secondaryContainer": "#004F47", "onSecondaryContainer": "#A5F2E8",
+    "tertiary": "#FB7793", "onTertiary": "#3B0715", "background": "#0F172A", "onBackground": "#F8FAFC",
+    "surface": "#1E293B", "onSurface": "#F8FAFC", "surfaceVariant": "#334155", "onSurfaceVariant": "#F8FAFC",
+    "error": "#FFD166", "onError": "#2C1C00", "outline": "#94A3B8"
+  },
+  "music": {
+    "leftHand": "#00C7B1", "rightHand": "#5B4CFF", "neutralTrack": "#FFE6CA",
+    "whiteKey": "#E2E8F0", "whiteKeyPressed": "#00C7B1", "blackKey": "#0F172A", "blackKeyPressed": "#FB7793",
+    "correctNote": "#00C7B1", "wrongNote": "#FFD166", "waitingNote": "#FB7793",
+    "particleLeft": "#00C7B1CC", "particleRight": "#5B4CFFCC"
+  },
+  "effects": { "pressedGlow": 0.75, "noteTrail": 0.55, "particleIntensity": 0.8, "expressiveMotion": true }
+}

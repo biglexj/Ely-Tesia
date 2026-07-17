@@ -2,6 +2,7 @@ package com.biglexj.elytesia.ui
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -37,16 +38,34 @@ fun PianoKeyboard(
     minPitch: Int = 21,            // Nota mínima dinámica
     maxPitch: Int = 108,           // Nota máxima dinámica
     noteLabelMode: NoteLabelMode = NoteLabelMode.NONE,
+    onZoom: (Float) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var clickedPitch by remember { mutableStateOf<Int?>(null) }
     val textMeasurer = rememberTextMeasurer()
+    val musicTheme = LocalElyMusicTheme.current
+    val themeEffects = LocalElyThemeEffects.current
+    val materialColors = MaterialTheme.colorScheme
 
     Canvas(
         modifier = modifier.pointerInput(minPitch, maxPitch) { // Re-enlaza si cambian los límites
+            var previousPinchDistance: Float? = null
             awaitPointerEventScope {
                 while (true) {
                     val event = awaitPointerEvent()
+                    val pressedChanges = event.changes.filter { it.pressed }
+                    if (pressedChanges.size >= 2) {
+                        clickedPitch?.let { onKeyAction(it, false) }
+                        clickedPitch = null
+                        val distance = (pressedChanges[0].position - pressedChanges[1].position).getDistance()
+                        previousPinchDistance?.takeIf { it > 0f }?.let { previous ->
+                            onZoom(distance / previous)
+                        }
+                        previousPinchDistance = distance
+                        event.changes.forEach { it.consume() }
+                        continue
+                    }
+                    previousPinchDistance = null
                     val position = event.changes.firstOrNull()?.position ?: Offset.Zero
                     val x = position.x
                     val y = position.y
@@ -171,27 +190,21 @@ fun PianoKeyboard(
             
             val fillBrush = when {
                 isWrong -> {
-                    Brush.verticalGradient(listOf(Color(0xFFFFD166).copy(alpha = 0.45f), Color(0xFFF59E0B)))
+                    Brush.verticalGradient(listOf(musicTheme.wrongNote.copy(alpha = 0.45f), musicTheme.wrongNote))
                 }
                 isSongActive -> {
-                    val trackColor = when ((songActiveTracks[pitch] ?: 0) % 3) {
-                        0 -> AuroraViolet
-                        1 -> ElyGreen
-                        else -> ElyCream
-                    }
-                    Brush.verticalGradient(listOf(trackColor.copy(alpha = 0.3f), trackColor))
+                    val trackColor = HandColorResolver.color(musicTheme, pitch, songActiveTracks[pitch])
+                    Brush.verticalGradient(
+                        listOf(trackColor.copy(alpha = themeEffects.pressedGlow.coerceIn(0.15f, 0.85f)), trackColor)
+                    )
                 }
                 isUserActive -> {
-                    val latchedColor = userActiveTracks[pitch]?.let { track ->
-                        when (track % 3) {
-                            0 -> AuroraViolet
-                            1 -> ElyGreen
-                            else -> ElyCream
-                        }
-                    } ?: ElyGreen
+                    val track = userActiveTracks[pitch]
+                    val latchedColor = track?.let { HandColorResolver.color(musicTheme, pitch, it) }
+                        ?: musicTheme.whiteKeyPressed
                     Brush.verticalGradient(
                         colors = listOf(
-                            latchedColor.copy(alpha = 0.3f),
+                            latchedColor.copy(alpha = themeEffects.pressedGlow.coerceIn(0.15f, 0.85f)),
                             latchedColor
                         )
                     )
@@ -199,8 +212,8 @@ fun PianoKeyboard(
                 else -> {
                     Brush.verticalGradient(
                         colors = listOf(
-                            Color(0xFFE2E8F0),
-                            Color(0xFFCBD5E1)
+                            musicTheme.whiteKey,
+                            musicTheme.whiteKey.copy(alpha = 0.82f)
                         )
                     )
                 }
@@ -213,7 +226,7 @@ fun PianoKeyboard(
             )
             
             drawRect(
-                color = BorderGray,
+                color = materialColors.outline,
                 topLeft = Offset(left, 0f),
                 size = rectSize,
                 style = Stroke(width = 1.5f)
@@ -237,30 +250,30 @@ fun PianoKeyboard(
             
             val fillBrush = when {
                 isWrong -> {
-                    Brush.verticalGradient(listOf(Color(0xFFFFD166), Color(0xFFF59E0B).copy(alpha = 0.55f)))
+                    Brush.verticalGradient(listOf(musicTheme.wrongNote, musicTheme.wrongNote.copy(alpha = 0.55f)))
                 }
                 isSongActive -> {
                     Brush.verticalGradient(
                         colors = listOf(
-                            ElyPink,
-                            ElyPink.copy(alpha = 0.5f)
+                            musicTheme.blackKeyPressed,
+                            musicTheme.blackKeyPressed.copy(alpha = themeEffects.pressedGlow.coerceIn(0.2f, 0.85f))
                         )
                     )
                 }
                 isUserActive -> {
-                    val latchedColor = if (pitch in userActiveTracks) ElyPink else ElyGreen
+                    val latchedColor = musicTheme.blackKeyPressed
                     Brush.verticalGradient(
                         colors = listOf(
                             latchedColor,
-                            latchedColor.copy(alpha = 0.5f)
+                            latchedColor.copy(alpha = themeEffects.pressedGlow.coerceIn(0.2f, 0.85f))
                         )
                     )
                 }
                 else -> {
                     Brush.verticalGradient(
                         colors = listOf(
-                            Color(0xFF1E293B),
-                            Color(0xFF0F172A)
+                            musicTheme.blackKey.copy(alpha = 0.82f),
+                            musicTheme.blackKey
                         )
                     )
                 }
@@ -273,7 +286,7 @@ fun PianoKeyboard(
             )
             
             drawRect(
-                color = Color.Black,
+                color = materialColors.outline,
                 topLeft = Offset(left, 0f),
                 size = Size(blackKeyWidth, blackKeyHeight),
                 style = Stroke(width = 1f)
@@ -299,7 +312,7 @@ fun PianoKeyboard(
                 val layout = textMeasurer.measure(
                     text = label,
                     style = TextStyle(
-                        color = if (pitch in userActiveKeys || pitch in songActiveKeys || pitch in wrongUserKeys) Color.White else Color(0xFF334155),
+                        color = if (pitch in userActiveKeys || pitch in songActiveKeys || pitch in wrongUserKeys) materialColors.onPrimary else materialColors.outline,
                         fontSize = if (whiteKeyWidth < 18f) 5.sp else 7.sp,
                         fontWeight = FontWeight.Bold
                     ),

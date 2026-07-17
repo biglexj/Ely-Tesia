@@ -40,6 +40,8 @@ fun PianoRollCanvas(
     timeWindowMs: Long = 2000L // Cuánto tiempo de notas cabe en la pantalla verticalmente
 ) {
     val particles = remember { mutableStateListOf<NoteParticle>() }
+    val musicTheme = LocalElyMusicTheme.current
+    val themeEffects = LocalElyThemeEffects.current
 
     // Generador de partículas para las notas activas
     LaunchedEffect(activeKeys.toMap(), activeTracks.toMap(), currentTimeMs) {
@@ -51,13 +53,9 @@ fun PianoRollCanvas(
                     else -> false
                 }
                 val particleColor = if (isBlack) {
-                    ElyPink
+                    musicTheme.blackKeyPressed
                 } else {
-                    when ((activeTracks[pitch] ?: 0) % 3) {
-                        0 -> AuroraViolet
-                        1 -> ElyGreen
-                        else -> ElyCream
-                    }
+                    if (HandColorResolver.isLeftHand(pitch, activeTracks[pitch])) musicTheme.particleLeft else musicTheme.particleRight
                 }
                 
                 // Necesitamos calcular el X aproximado de la nota
@@ -68,7 +66,7 @@ fun PianoRollCanvas(
                         y = 0f, // Comienza en el fondo (teclado)
                         speedY = Random.nextFloat() * 4f + 2f,
                         color = particleColor,
-                        size = Random.nextFloat() * 6f + 4f,
+                        size = (Random.nextFloat() * 6f + 4f) * themeEffects.particleIntensity.coerceAtLeast(0.1f),
                         alpha = 1.0f,
                         life = 1.0f
                     )
@@ -174,17 +172,13 @@ fun PianoRollCanvas(
 
             if (drawHeight > 0f) {
                 // Color según el pitch o canal (Violeta, Verde, Rosa)
-                val baseColor = when {
-                    isBlackKey(note.pitch) -> ElyPink
-                    note.track % 3 == 0 -> AuroraViolet
-                    note.track % 3 == 1 -> ElyGreen
-                    else -> ElyCream
-                }
+                val baseColor = if (isBlackKey(note.pitch)) musicTheme.blackKeyPressed
+                    else HandColorResolver.color(musicTheme, note.pitch, note.track)
 
                 val brush = Brush.verticalGradient(
                     colors = listOf(
                         baseColor.copy(alpha = 0.9f),
-                        baseColor.copy(alpha = 0.4f)
+                        baseColor.copy(alpha = themeEffects.noteTrail.coerceIn(0.15f, 1f))
                     )
                 )
 

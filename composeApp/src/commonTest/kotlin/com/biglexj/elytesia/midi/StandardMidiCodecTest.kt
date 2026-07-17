@@ -3,11 +3,63 @@ package com.biglexj.elytesia.midi
 import com.biglexj.elytesia.model.ControlEvent
 import com.biglexj.elytesia.model.NoteEvent
 import com.biglexj.elytesia.model.Song
+import com.biglexj.elytesia.generateBellaCiaoSong
+import com.biglexj.elytesia.generateDemoSong
+import com.biglexj.elytesia.generateGymnopedieSong
+import com.biglexj.elytesia.generateScaleSong
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class StandardMidiCodecTest {
+    @Test
+    fun bundledFallbackDemosArePlayable() {
+        val demos = listOf(
+            generateScaleSong(),
+            generateGymnopedieSong(),
+            generateBellaCiaoSong(),
+            generateDemoSong()
+        )
+
+        assertTrue(demos.all { it.notes.isNotEmpty() })
+        assertTrue(demos.all { it.durationMs > 0L })
+    }
+
+    @Test
+    fun decodesFormatOneMidiWithMultipleTracks() {
+        fun ascii(value: String) = value.encodeToByteArray().toList()
+        fun u16(value: Int) = listOf((value shr 8).toByte(), value.toByte())
+        fun u32(value: Int) = listOf(
+            (value shr 24).toByte(),
+            (value shr 16).toByte(),
+            (value shr 8).toByte(),
+            value.toByte()
+        )
+        fun track(events: List<Byte>) = ascii("MTrk") + u32(events.size) + events
+
+        val tempoTrack = listOf<Byte>(
+            0, 0xFF.toByte(), 0x51, 3, 0x07, 0xA1.toByte(), 0x20,
+            0, 0xFF.toByte(), 0x2F, 0
+        )
+        val noteTrack = listOf<Byte>(
+            0, 0x90.toByte(), 60, 100,
+            0x83.toByte(), 0x60, 0x80.toByte(), 60, 0,
+            0, 0xFF.toByte(), 0x2F, 0
+        )
+        val midi = buildList<Byte> {
+            addAll(ascii("MThd")); addAll(u32(6))
+            addAll(u16(1)); addAll(u16(2)); addAll(u16(480))
+            addAll(track(tempoTrack)); addAll(track(noteTrack))
+        }.toByteArray()
+
+        val decoded = StandardMidiCodec.decode(midi, "dos_pistas.mid")
+
+        assertEquals(1, decoded.notes.size)
+        assertEquals(60, decoded.notes.single().pitch)
+        assertEquals(500, decoded.notes.single().durationMs)
+        assertEquals(500, decoded.durationMs)
+    }
+
     @Test
     fun roundTripPreservesNotesVelocityAndSustain() {
         val original = Song(

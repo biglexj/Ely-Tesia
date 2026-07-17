@@ -23,6 +23,9 @@ data class SavedAppState(
     val selectedAudioDevice: String = "Sistema (Predeterminado)",
     val selectedSongName: String? = null,
     val selectedInstrument: String = "PIANO_ACUSTICO",
+    val selectedThemeId: String = "com.biglexj.aurora",
+    val useDynamicColor: Boolean = false,
+    val importedThemes: List<String> = emptyList(),
     val songs: List<Song> = emptyList()
 )
 
@@ -35,6 +38,9 @@ object AppStateCodec {
         appendLine("audio=${escape(state.selectedAudioDevice)}")
         appendLine("selected=${escape(state.selectedSongName.orEmpty())}")
         appendLine("instrument=${state.selectedInstrument}")
+        appendLine("theme=${escape(state.selectedThemeId)}")
+        appendLine("dynamicColor=${state.useDynamicColor}")
+        state.importedThemes.forEach { appendLine("themeJson=${escape(it)}") }
         state.songs.forEach { song ->
             val notes = song.notes.joinToString(";") {
                 "${it.pitch},${it.startTimeMs},${it.durationMs},${it.velocity},${it.track}"
@@ -81,6 +87,12 @@ object AppStateCodec {
                     ?.removePrefix("selected=")?.let(::unescape)?.ifBlank { null },
                 selectedInstrument = lines.firstOrNull { it.startsWith("instrument=") }
                     ?.removePrefix("instrument=") ?: "PIANO_ACUSTICO",
+                selectedThemeId = lines.firstOrNull { it.startsWith("theme=") }
+                    ?.removePrefix("theme=")?.let(::unescape) ?: "com.biglexj.aurora",
+                useDynamicColor = lines.firstOrNull { it.startsWith("dynamicColor=") }
+                    ?.removePrefix("dynamicColor=")?.toBooleanStrictOrNull() ?: false,
+                importedThemes = lines.filter { it.startsWith("themeJson=") }
+                    .map { it.removePrefix("themeJson=").let(::unescape) },
                 songs = songs
             )
         }.getOrNull()

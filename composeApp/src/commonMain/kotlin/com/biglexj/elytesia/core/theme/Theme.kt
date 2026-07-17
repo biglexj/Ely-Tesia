@@ -1,14 +1,21 @@
 package com.biglexj.elytesia.theme
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.dp
 
 val DarkGrayBg = Color(0xFF0F172A)
 val SurfaceGray = Color(0xFF1E293B)
@@ -34,6 +41,45 @@ private val DarkColorScheme = darkColorScheme(
     onSurface = TextMain
 )
 
+val LocalElyThemeDefinition = staticCompositionLocalOf { ThemeDefaults.Aurora }
+val LocalElyMusicTheme = staticCompositionLocalOf { ThemeDefaults.Aurora.music.resolve() }
+val LocalElyThemeEffects = staticCompositionLocalOf { ThemeDefaults.Aurora.effects }
+
+private val ElyShapes = Shapes(
+    extraSmall = RoundedCornerShape(6.dp),
+    small = RoundedCornerShape(10.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(24.dp),
+    extraLarge = RoundedCornerShape(32.dp)
+)
+
+fun ElyThemeDefinition.toColorScheme(): ColorScheme {
+    val t = material
+    val colors = arrayOf(
+        t.primary, t.onPrimary, t.primaryContainer, t.onPrimaryContainer, t.secondary, t.onSecondary,
+        t.secondaryContainer, t.onSecondaryContainer, t.tertiary, t.onTertiary, t.background,
+        t.onBackground, t.surface, t.onSurface, t.surfaceVariant, t.onSurfaceVariant, t.error,
+        t.onError, t.outline
+    ).map(String::toComposeColor)
+    return if (mode == ThemeMode.LIGHT) {
+        lightColorScheme(
+            primary = colors[0], onPrimary = colors[1], primaryContainer = colors[2], onPrimaryContainer = colors[3],
+            secondary = colors[4], onSecondary = colors[5], secondaryContainer = colors[6], onSecondaryContainer = colors[7],
+            tertiary = colors[8], onTertiary = colors[9], background = colors[10], onBackground = colors[11],
+            surface = colors[12], onSurface = colors[13], surfaceVariant = colors[14], onSurfaceVariant = colors[15],
+            error = colors[16], onError = colors[17], outline = colors[18]
+        )
+    } else {
+        darkColorScheme(
+            primary = colors[0], onPrimary = colors[1], primaryContainer = colors[2], onPrimaryContainer = colors[3],
+            secondary = colors[4], onSecondary = colors[5], secondaryContainer = colors[6], onSecondaryContainer = colors[7],
+            tertiary = colors[8], onTertiary = colors[9], background = colors[10], onBackground = colors[11],
+            surface = colors[12], onSurface = colors[13], surfaceVariant = colors[14], onSurfaceVariant = colors[15],
+            error = colors[16], onError = colors[17], outline = colors[18]
+        )
+    }
+}
+
 // Tipografía explícita con SansSerif para garantizar soporte completo de
 // caracteres españoles (acentos: á é í ó ú ü, y ñ) en Desktop JVM / Android.
 private val ElyTypography = Typography(
@@ -56,11 +102,20 @@ private val ElyTypography = Typography(
 
 @Composable
 fun ElyTesiaTheme(
+    theme: ElyThemeDefinition = ThemeDefaults.Aurora,
+    platformColorScheme: ColorScheme? = null,
     content: @Composable () -> Unit
 ) {
-    MaterialTheme(
-        colorScheme = DarkColorScheme,
-        typography = ElyTypography,
-        content = content
-    )
+    CompositionLocalProvider(
+        LocalElyThemeDefinition provides theme,
+        LocalElyMusicTheme provides theme.music.resolve(),
+        LocalElyThemeEffects provides theme.effects
+    ) {
+        MaterialTheme(
+            colorScheme = platformColorScheme ?: theme.toColorScheme(),
+            typography = ElyTypography,
+            shapes = ElyShapes,
+            content = content
+        )
+    }
 }

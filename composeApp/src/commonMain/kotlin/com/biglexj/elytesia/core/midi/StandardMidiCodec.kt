@@ -28,7 +28,12 @@ object StandardMidiCodec {
         repeat(trackCount) { trackIndex ->
             val sig = reader.ascii(4)
             require(sig == "MTrk") { "Pista MIDI no válida: se esperaba MTrk pero se leyó '$sig' en posición ${reader.position - 4}" }
-            val trackEnd = reader.position + reader.u32().toInt()
+            // The track size starts after its four-byte length field. Keeping the
+            // read separate is important: using `position + u32()` captures the
+            // position before u32() advances it and truncates every track by four
+            // bytes. On format-1 files that also makes the next MTrk unreadable.
+            val trackLength = reader.u32().toInt()
+            val trackEnd = reader.position + trackLength
             var tick = 0L
             var runningStatus = 0
             val active = mutableMapOf<Int, Pair<Long, Int>>()

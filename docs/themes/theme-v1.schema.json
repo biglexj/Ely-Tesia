@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://elytesia.app/schemas/theme-v1.schema.json",
+  "title": "Ely-Tesia Community Theme v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "name", "author", "version", "license", "mode", "material", "music"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "id": { "type": "string", "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)+$", "maxLength": 120 },
+    "name": { "type": "string", "minLength": 1, "maxLength": 60 },
+    "author": { "type": "string", "minLength": 1, "maxLength": 60 },
+    "description": { "type": "string", "maxLength": 300 },
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "license": { "type": "string", "minLength": 1, "maxLength": 40 },
+    "mode": { "enum": ["dark", "light", "auto"] },
+    "material": { "$ref": "#/$defs/material" },
+    "music": { "$ref": "#/$defs/music" },
+    "effects": { "$ref": "#/$defs/effects" }
+  },
+  "$defs": {
+    "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$" },
+    "material": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primary", "onPrimary", "primaryContainer", "onPrimaryContainer", "secondary", "onSecondary", "secondaryContainer", "onSecondaryContainer", "tertiary", "onTertiary", "background", "onBackground", "surface", "onSurface", "surfaceVariant", "onSurfaceVariant", "error", "onError", "outline"],
+      "properties": {
+        "primary": { "$ref": "#/$defs/color" }, "onPrimary": { "$ref": "#/$defs/color" },
+        "primaryContainer": { "$ref": "#/$defs/color" }, "onPrimaryContainer": { "$ref": "#/$defs/color" },
+        "secondary": { "$ref": "#/$defs/color" }, "onSecondary": { "$ref": "#/$defs/color" },
+        "secondaryContainer": { "$ref": "#/$defs/color" }, "onSecondaryContainer": { "$ref": "#/$defs/color" },
+        "tertiary": { "$ref": "#/$defs/color" }, "onTertiary": { "$ref": "#/$defs/color" },
+        "background": { "$ref": "#/$defs/color" }, "onBackground": { "$ref": "#/$defs/color" },
+        "surface": { "$ref": "#/$defs/color" }, "onSurface": { "$ref": "#/$defs/color" },
+        "surfaceVariant": { "$ref": "#/$defs/color" }, "onSurfaceVariant": { "$ref": "#/$defs/color" },
+        "error": { "$ref": "#/$defs/color" }, "onError": { "$ref": "#/$defs/color" },
+        "outline": { "$ref": "#/$defs/color" }
+      }
+    },
+    "music": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["leftHand", "rightHand", "neutralTrack", "whiteKey", "whiteKeyPressed", "blackKey", "blackKeyPressed", "correctNote", "wrongNote", "waitingNote", "particleLeft", "particleRight"],
+      "properties": {
+        "leftHand": { "$ref": "#/$defs/color" }, "rightHand": { "$ref": "#/$defs/color" },
+        "neutralTrack": { "$ref": "#/$defs/color" }, "whiteKey": { "$ref": "#/$defs/color" },
+        "whiteKeyPressed": { "$ref": "#/$defs/color" }, "blackKey": { "$ref": "#/$defs/color" },
+        "blackKeyPressed": { "$ref": "#/$defs/color" }, "correctNote": { "$ref": "#/$defs/color" },
+        "wrongNote": { "$ref": "#/$defs/color" }, "waitingNote": { "$ref": "#/$defs/color" },
+        "particleLeft": { "$ref": "#/$defs/color" }, "particleRight": { "$ref": "#/$defs/color" }
+      }
+    },
+    "effects": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pressedGlow": { "type": "number", "minimum": 0, "maximum": 1 },
+        "noteTrail": { "type": "number", "minimum": 0, "maximum": 1 },
+        "particleIntensity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "expressiveMotion": { "type": "boolean" }
+      }
+    }
+  }
+}

@@ -3,6 +3,7 @@ package com.biglexj.elytesia
 import android.os.Bundle
 import android.provider.OpenableColumns
 import android.widget.Toast
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -24,6 +25,8 @@ class MainActivity : ComponentActivity() {
             val midiDeviceManager = remember { AndroidMidiDeviceManager(this@MainActivity) }
             var importedSong by remember { mutableStateOf<Song?>(null) }
             var pendingExport by remember { mutableStateOf<Song?>(null) }
+            var importedThemeJson by remember { mutableStateOf<String?>(null) }
+            var pendingThemeExport by remember { mutableStateOf<Pair<String, String>?>(null) }
 
             val openMidi = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
                 if (uri != null) {
@@ -54,9 +57,33 @@ class MainActivity : ComponentActivity() {
                 pendingExport = null
             }
 
+            val openTheme = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+                if (uri != null) {
+                    runCatching {
+                        contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() }
+                            ?: error("No se pudo leer el tema")
+                    }.onSuccess { importedThemeJson = it }
+                        .onFailure { Toast.makeText(this@MainActivity, "Tema no válido: ${it.message}", Toast.LENGTH_LONG).show() }
+                }
+            }
+
+            val saveTheme = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+                val pending = pendingThemeExport
+                if (uri != null && pending != null) {
+                    runCatching {
+                        contentResolver.openOutputStream(uri)?.bufferedWriter()?.use { it.write(pending.second) }
+                            ?: error("No se pudo crear el archivo")
+                    }.onFailure { Toast.makeText(this@MainActivity, "Error al exportar tema: ${it.message}", Toast.LENGTH_LONG).show() }
+                }
+                pendingThemeExport = null
+            }
+
             App(
                 localStorage = localStorage,
                 midiDeviceManager = midiDeviceManager,
+                showProgressWhenIdle = false,
+                simplifyPlaybackChrome = true,
+                centerPlaybackControls = true,
                 onRequestMidiFile = {
                     openMidi.launch(arrayOf("audio/midi", "audio/x-midi", "application/octet-stream"))
                 },
@@ -65,6 +92,20 @@ class MainActivity : ComponentActivity() {
                 onRequestExportMidiFile = { song ->
                     pendingExport = song
                     saveMidi.launch("${song.name.replace(' ', '_')}.mid")
+                },
+                onPracticeActivityChanged = { active ->
+                    if (active) {
+                        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    } else {
+                        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    }
+                },
+                onRequestThemeFile = { openTheme.launch(arrayOf("application/json", "text/json", "application/octet-stream")) },
+                importedThemeJson = importedThemeJson,
+                onImportedThemeConsumed = { importedThemeJson = null },
+                onRequestExportTheme = { fileName, json ->
+                    pendingThemeExport = fileName to json
+                    saveTheme.launch(fileName)
                 }
             )
         }

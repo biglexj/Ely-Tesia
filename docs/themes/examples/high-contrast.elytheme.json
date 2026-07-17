@@ -1,0 +1,18 @@
+{
+  "$schema": "https://elytesia.app/schemas/theme-v1.schema.json", "schemaVersion": 1,
+  "id": "com.biglexj.high-contrast-community-example", "name": "Alto Contraste Community", "author": "biglexj",
+  "description": "Ejemplo accesible de contraste reforzado.", "version": "1.0.0", "license": "CC0-1.0", "mode": "dark",
+  "material": {
+    "primary": "#FFFF00", "onPrimary": "#000000", "primaryContainer": "#4A4A00", "onPrimaryContainer": "#FFFFFF",
+    "secondary": "#00FFFF", "onSecondary": "#000000", "secondaryContainer": "#004A4A", "onSecondaryContainer": "#FFFFFF",
+    "tertiary": "#FF66FF", "onTertiary": "#000000", "background": "#000000", "onBackground": "#FFFFFF",
+    "surface": "#0A0A0A", "onSurface": "#FFFFFF", "surfaceVariant": "#242424", "onSurfaceVariant": "#FFFFFF",
+    "error": "#FF6B6B", "onError": "#000000", "outline": "#FFFFFF"
+  },
+  "music": {
+    "leftHand": "#00FFFF", "rightHand": "#FFFF00", "neutralTrack": "#FF66FF", "whiteKey": "#FFFFFF",
+    "whiteKeyPressed": "#00FFFF", "blackKey": "#000000", "blackKeyPressed": "#FFFF00", "correctNote": "#00FF66",
+    "wrongNote": "#FF3B30", "waitingNote": "#FF66FF", "particleLeft": "#00FFFF", "particleRight": "#FFFF00"
+  },
+  "effects": { "pressedGlow": 1.0, "noteTrail": 0.8, "particleIntensity": 0.65, "expressiveMotion": true }
+}

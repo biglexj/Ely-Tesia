@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.biglexj.elytesia.midi.MidiDeviceManager
 import com.biglexj.elytesia.midi.getPlatformMidiDeviceManager
 import com.biglexj.elytesia.midi.InstrumentType
@@ -46,11 +47,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import ely_tesia.composeapp.generated.resources.*
 
-enum class SidebarMode { BIBLIOTECA, INSTRUMENTOS }
+enum class SidebarMode { BIBLIOTECA, INSTRUMENTOS, TEMAS }
 
 @OptIn(ExperimentalMaterial3Api::class, org.jetbrains.compose.resources.ExperimentalResourceApi::class)
 @Composable
-fun App(
+internal fun ElyTesiaAppContent(
     midiDeviceManager: MidiDeviceManager = remember { getPlatformMidiDeviceManager() },
     onLoadMidiFile: (() -> Song?)? = null,
     onRequestMidiFile: (() -> Unit)? = null,
@@ -59,9 +60,28 @@ fun App(
     onExportMidiFile: ((Song) -> Boolean)? = null,
     onRequestExportMidiFile: ((Song) -> Unit)? = null,
     localStorage: LocalStorage = NoOpLocalStorage,
-    onParseMidiBytes: ((ByteArray, String) -> Song)? = null
+    onParseMidiBytes: ((ByteArray, String) -> Song)? = null,
+    onPracticeActivityChanged: (Boolean) -> Unit = {},
+    onRequestThemeFile: (() -> Unit)? = null,
+    importedThemeJson: String? = null,
+    onImportedThemeConsumed: (() -> Unit)? = null,
+    onRequestExportTheme: ((String, String) -> Unit)? = null,
+    showProgressWhenIdle: Boolean = true,
+    simplifyPlaybackChrome: Boolean = false,
+    centerPlaybackControls: Boolean = false
 ) {
     val restoredState = remember(localStorage) { AppStateCodec.decode(localStorage.read()) }
+    val restoredThemes = remember(restoredState) {
+        restoredState?.importedThemes.orEmpty().mapNotNull { ThemeJsonCodec.decode(it).getOrNull() }
+    }
+    val installedThemes = remember {
+        mutableStateListOf<ElyThemeDefinition>().apply {
+            addAll(ThemeDefaults.builtIns)
+            restoredThemes.forEach { restored -> if (none { it.id == restored.id }) add(restored) }
+        }
+    }
+    var selectedThemeId by remember { mutableStateOf(restoredState?.selectedThemeId ?: ThemeDefaults.Aurora.id) }
+    var useDynamicColor by remember { mutableStateOf(restoredState?.useDynamicColor ?: false) }
     var stateInitialized by remember { mutableStateOf(false) }
     var loadedSong by remember { mutableStateOf<Song?>(null) }
     var currentTimeMs by remember { mutableStateOf(0L) }
@@ -90,10 +110,19 @@ fun App(
     // Límites de teclado dinámicos (Mapeo Interactivo)
     var minPitch by remember { mutableStateOf(restoredState?.minPitch ?: 21) } // La0 por defecto
     var maxPitch by remember { mutableStateOf(restoredState?.maxPitch ?: 108) } // Do8 por defecto
+    var visibleMinPitch by remember { mutableStateOf(restoredState?.minPitch ?: 21) }
+    var visibleMaxPitch by remember { mutableStateOf(restoredState?.maxPitch ?: 108) }
+    var keyboardZoomAccumulator by remember { mutableStateOf(1f) }
     
     var mappingMode by remember { mutableStateOf(false) }
     var mappingStep by remember { mutableStateOf(0) } // 0 = tecla inicio, 1 = tecla fin
     var tempMinPitch by remember { mutableStateOf(21) }
+
+    LaunchedEffect(minPitch, maxPitch) {
+        visibleMinPitch = minPitch
+        visibleMaxPitch = maxPitch
+        keyboardZoomAccumulator = 1f
+    }
 
     // Biblioteca / Sidebar
     var activeSidebar by remember { mutableStateOf<SidebarMode?>(null) }
@@ -124,6 +153,7 @@ fun App(
     var lastRecording by remember { mutableStateOf<Song?>(null) }
     var recordingName by remember { mutableStateOf("") }
     var exportSucceeded by remember { mutableStateOf<Boolean?>(null) }
+    var userMessage by remember { mutableStateOf<String?>(null) }
     
     // Dispositivos MIDI físicos
     var availableDevices by remember { mutableStateOf(emptyList<String>()) }
@@ -139,6 +169,35 @@ fun App(
 
     val scope = rememberCoroutineScope()
 
+    fun refreshMidiDevices() {
+        runCatching { midiDeviceManager.getAvailableDevices() }
+            .onSuccess { devices ->
+                availableDevices = devices
+                if (selectedDevice !in devices) selectedDevice = devices.firstOrNull().orEmpty()
+            }
+            .onFailure { error ->
+                availableDevices = emptyList()
+                selectedDevice = ""
+                userMessage = "No se pudieron consultar los dispositivos MIDI: ${error.message ?: "error desconocido"}"
+            }
+    }
+
+    fun refreshAudioDevices() {
+        runCatching { midiDeviceManager.getAudioOutputs() }
+            .onSuccess { audioDevices = it }
+            .onFailure { error ->
+                audioDevices = emptyList()
+                userMessage = "No se pudieron consultar las salidas de audio: ${error.message ?: "error desconocido"}"
+            }
+    }
+
+    LaunchedEffect(isPlaying, isRecording) {
+        onPracticeActivityChanged(isPlaying || isRecording)
+    }
+    DisposableEffect(Unit) {
+        onDispose { onPracticeActivityChanged(false) }
+    }
+
     fun recordNoteOn(pitch: Int, velocity: Int) {
         if (!isRecording || pitch in recordingActiveNotes) return
         recordingActiveNotes[pitch] =
@@ -150,15 +209,7 @@ fun App(
         if (!isPlaying && !waitMode) return
         val song = loadedSong ?: return
         val toleranceMs = 180L
-        val expectedNote = song.notes
-            .filter { note -> note.pitch == pitch &&
-                currentTimeMs >= note.startTimeMs - toleranceMs &&
-                currentTimeMs <= note.startTimeMs + note.durationMs + toleranceMs
-            }
-            .maxWithOrNull(
-                compareBy<NoteEvent> { it.startTimeMs }
-                    .thenBy { -it.track }
-            )
+        val expectedNote = PlaybackLogic.expectedNote(song, pitch, currentTimeMs, toleranceMs)
         if (expectedNote == null) {
             if (pitch !in wrongUserKeys) wrongUserKeys.add(pitch)
         } else {
@@ -257,6 +308,25 @@ fun App(
         }
     }
 
+    fun installTheme(source: String) {
+        ThemeJsonCodec.decode(source)
+            .onSuccess { decoded ->
+                val theme = decoded.copy(builtIn = false)
+                val index = installedThemes.indexOfFirst { it.id == theme.id }
+                when {
+                    index < 0 -> installedThemes.add(theme)
+                    !installedThemes[index].builtIn -> installedThemes[index] = theme
+                    else -> {
+                        userMessage = "No se puede reemplazar un tema integrado. Usa otro id."
+                        return@onSuccess
+                    }
+                }
+                selectedThemeId = theme.id
+                userMessage = "Tema '${theme.name}' instalado."
+            }
+            .onFailure { userMessage = "Tema no válido: ${it.message ?: "error desconocido"}" }
+    }
+
     LaunchedEffect(importedSong) {
         importedSong?.let {
             addImportedSong(it)
@@ -264,20 +334,15 @@ fun App(
         }
     }
 
+    LaunchedEffect(importedThemeJson) {
+        importedThemeJson?.let(::installTheme)
+        if (importedThemeJson != null) onImportedThemeConsumed?.invoke()
+    }
+
     // Inicializar dispositivos, precargar canciones y listar salidas de audio
     LaunchedEffect(Unit) {
-        availableDevices = midiDeviceManager.getAvailableDevices()
-                                                         if (selectedDevice !in availableDevices) {
-                                                             selectedDevice = availableDevices.firstOrNull().orEmpty()
-                                                         }
-                                                         if (selectedDevice !in availableDevices) {
-                                                             selectedDevice = availableDevices.firstOrNull().orEmpty()
-                                                         }
-        if (availableDevices.isNotEmpty()) {
-            selectedDevice = availableDevices.first()
-        }
-        
-        audioDevices = midiDeviceManager.getAudioOutputs()
+        refreshMidiDevices()
+        refreshAudioDevices()
         
         val restoredSongs = restoredState?.songs.orEmpty()
         val systemDemos = mutableListOf<Song>()
@@ -311,8 +376,24 @@ fun App(
                         } else {
                             com.biglexj.elytesia.midi.StandardMidiCodec.decode(midiBytes, title)
                         }
+                        // Some legacy demo files were shipped as valid but empty
+                        // 26-byte MIDI containers. Keep their catalog entries, but
+                        // replace them with the equivalent generated song so every
+                        // visible library item can actually be played.
+                        val playableSong = if (decodedSong.notes.isNotEmpty() && decodedSong.durationMs > 0L) {
+                            decodedSong
+                        } else {
+                            when (file) {
+                                "escala_do.mid" -> generateScaleSong()
+                                "gymnopedie.mid" -> generateGymnopedieSong()
+                                "bella_ciao.mid" -> generateBellaCiaoSong()
+                                "bach_prelude.mid" -> generateDemoSong()
+                                else -> error("El MIDI '$file' no contiene notas reproducibles")
+                            }
+                        }
                         systemDemos.add(
-                            decodedSong.copy(
+                            playableSong.copy(
+                                name = title,
                                 isDemo = true,
                                 difficulty = diff
                             )
@@ -338,7 +419,20 @@ fun App(
 
         if (restoredSongs.isNotEmpty()) {
             val customSongs = restoredSongs.filter { restored ->
-                systemDemos.none { it.name == restored.name }
+                fun normalizedSongName(value: String) = value
+                    .lowercase()
+                    .filter { it.isLetterOrDigit() }
+                val restoredName = normalizedSongName(restored.name)
+                val matchesSystemDemo = systemDemos.any { system ->
+                    val systemName = normalizedSongName(system.name)
+                    restoredName == systemName ||
+                        (restoredName.length >= 8 && systemName.startsWith(restoredName)) ||
+                        (systemName.length >= 8 && restoredName.startsWith(systemName))
+                }
+                !restored.isDemo &&
+                    restored.notes.isNotEmpty() &&
+                    restored.durationMs > 0L &&
+                    !matchesSystemDemo
             }
             songList.addAll(systemDemos)
             songList.addAll(customSongs)
@@ -360,6 +454,9 @@ fun App(
         selectedAudioDevice,
         loadedSong?.name,
         selectedInstrument,
+        selectedThemeId,
+        useDynamicColor,
+        installedThemes.toList(),
         songList.toList()
     ) {
         if (stateInitialized) {
@@ -373,7 +470,13 @@ fun App(
                         selectedAudioDevice = selectedAudioDevice,
                         selectedSongName = loadedSong?.name,
                         selectedInstrument = selectedInstrument.name,
-                        songs = songList.toList()
+                        selectedThemeId = selectedThemeId,
+                        useDynamicColor = useDynamicColor,
+                        importedThemes = installedThemes.filterNot { it.builtIn }.map(ThemeJsonCodec::encode),
+                        // System demos are bundled resources and must not be
+                        // serialized as user imports. Older versions did so and
+                        // recreated stale duplicates after an update.
+                        songs = songList.filterNot { it.isDemo }
                     )
                 )
             )
@@ -383,7 +486,8 @@ fun App(
     // Vincular al teclado MIDI físico (Soporta mapeo interactivo de teclas al tocar)
     LaunchedEffect(selectedDevice, mappingMode, mappingStep) {
         if (selectedDevice.isNotEmpty()) {
-            midiDeviceManager.openDevice(
+            runCatching {
+                midiDeviceManager.openDevice(
                 selectedDevice,
                 onNoteOn = { pitch, velocity ->
                     scope.launch {
@@ -426,7 +530,11 @@ fun App(
                         recordControlChange(controller, value, channel)
                     }
                 }
-            )
+                )
+            }.onFailure { error ->
+                userMessage = "No se pudo abrir '$selectedDevice': ${error.message ?: "error MIDI desconocido"}"
+                selectedDevice = ""
+            }
         } else {
             midiDeviceManager.closeDevice()
         }
@@ -434,15 +542,18 @@ fun App(
 
     // Vincular la salida de audio seleccionada
     LaunchedEffect(selectedAudioDevice) {
-        midiDeviceManager.selectAudioOutput(selectedAudioDevice)
+        runCatching { midiDeviceManager.selectAudioOutput(selectedAudioDevice) }
+            .onFailure { userMessage = "No se pudo seleccionar la salida de audio: ${it.message ?: "error desconocido"}" }
     }
 
     LaunchedEffect(selectedInstrument) {
-        midiDeviceManager.selectInstrument(selectedInstrument)
+        runCatching { midiDeviceManager.selectInstrument(selectedInstrument) }
+            .onFailure { userMessage = "No se pudo cambiar el instrumento: ${it.message ?: "error desconocido"}" }
     }
 
     LaunchedEffect(internalSoundEnabled) {
-        midiDeviceManager.setInternalSoundEnabled(internalSoundEnabled)
+        runCatching { midiDeviceManager.setInternalSoundEnabled(internalSoundEnabled) }
+            .onFailure { userMessage = "No se pudo cambiar el sonido virtual: ${it.message ?: "error desconocido"}" }
     }
 
     // Reloj/Bucle de reproducción, metrónomo y avance
@@ -462,9 +573,7 @@ fun App(
                 val delta = currentTimeSystem - lastTimeSystem
                 lastTimeSystem = currentTimeSystem
                 
-                val activeNow = song.notes.filter { 
-                    currentTimeMs >= it.startTimeMs && currentTimeMs < it.startTimeMs + it.durationMs 
-                }
+                val activeNow = PlaybackLogic.activeNotesAt(song, currentTimeMs)
                 
                 val startingNotes = activeNow.filter { currentTimeMs >= it.startTimeMs && currentTimeMs < it.startTimeMs + 80 }
                 val missingPitches = startingNotes.map { it.pitch }.filter { it !in userActiveKeys }
@@ -523,14 +632,7 @@ fun App(
                     // Una misma tecla puede seguir sostenida por varias pistas.
                     // Para representarla elegimos la nota de inicio más reciente;
                     // en un unísono exacto conservamos la pista de menor índice.
-                    val visibleActiveNotes = activeNow
-                        .groupBy { it.pitch }
-                        .mapValues { (_, notesAtPitch) ->
-                            notesAtPitch.maxWithOrNull(
-                                compareBy<NoteEvent> { it.startTimeMs }
-                                    .thenBy { -it.track }
-                            )!!
-                        }
+                    val visibleActiveNotes = PlaybackLogic.visibleNotesByPitch(activeNow)
 
                     activeKeyTracks.clear()
                     visibleActiveNotes.forEach { (pitch, note) -> activeKeyTracks[pitch] = note.track }
@@ -558,33 +660,53 @@ fun App(
     // Offset visual para compensar latencia de renderizado
     val visualTimeMs = currentTimeMs
 
-    ElyTesiaTheme {
+    val activeTheme = installedThemes.firstOrNull { it.id == selectedThemeId } ?: ThemeDefaults.Aurora
+    val platformColorScheme = rememberPlatformColorScheme(
+        enabled = useDynamicColor,
+        darkTheme = activeTheme.mode != ThemeMode.LIGHT
+    )
+
+    ElyTesiaTheme(theme = activeTheme, platformColorScheme = platformColorScheme) {
+        // Alias locales: el shell histórico conserva nombres legibles, pero ya
+        // obtiene todos los colores de los roles semánticos del tema activo.
+        val DarkGrayBg = MaterialTheme.colorScheme.background
+        val SurfaceGray = MaterialTheme.colorScheme.surface
+        val SurfaceLight = MaterialTheme.colorScheme.surfaceVariant
+        val BorderGray = MaterialTheme.colorScheme.outline
+        val TextMain = MaterialTheme.colorScheme.onSurface
+        val TextContrast = MaterialTheme.colorScheme.onSurfaceVariant
+        val AuroraViolet = MaterialTheme.colorScheme.primary
+        val OnAuroraViolet = MaterialTheme.colorScheme.onPrimary
+        val ElyGreen = MaterialTheme.colorScheme.secondary
+        val OnElyGreen = MaterialTheme.colorScheme.onSecondary
+        val ElyPink = MaterialTheme.colorScheme.tertiary
+        val OnElyPink = MaterialTheme.colorScheme.onTertiary
+        val ElyCream = MaterialTheme.colorScheme.secondaryContainer
+        val OnElyCream = MaterialTheme.colorScheme.onSecondaryContainer
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .background(DarkGrayBg)
         ) {
-            val isCompactLayout = maxWidth < 700.dp
-            val playbackProgress = if ((loadedSong?.durationMs ?: 0L) > 0L) {
-                (currentTimeMs.toFloat() / loadedSong!!.durationMs.toFloat()).coerceIn(0f, 1f)
-            } else 0f
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(6.dp)
-                    .align(Alignment.TopCenter)
-                    .background(BorderGray.copy(alpha = 0.35f))
-            ) {
-                Box(
+            val isCompactLayout = maxWidth < 700.dp || maxHeight < 600.dp
+            if (isPlaying || showProgressWhenIdle) {
+                PlaybackProgressBar(
+                    currentTimeMs = currentTimeMs,
+                    durationMs = loadedSong?.durationMs ?: 0L,
+                    onPreviewSeek = { targetMs ->
+                        currentTimeMs = targetMs
+                        activeKeys.clear()
+                        activeKeyTracks.clear()
+                    },
+                    onSeekCommitted = {
+                        midiDeviceManager.stopAllNotes()
+                        playbackRestartToken++
+                    },
+                    showBottomAccent = !simplifyPlaybackChrome,
                     modifier = Modifier
-                        .fillMaxHeight()
-                        .fillMaxWidth(playbackProgress)
-                        .background(
-                            Brush.horizontalGradient(
-                                listOf(ElyGreen, AuroraViolet, ElyPink)
-                            )
-                        )
+                        .zIndex(10f)
+                        .align(Alignment.TopCenter)
+                        .fillMaxWidth()
                 )
             }
 
@@ -594,8 +716,8 @@ fun App(
                 currentTimeMs = visualTimeMs,
                 activeKeys = activeKeys,
                 activeTracks = activeKeyTracks,
-                minPitch = minPitch,
-                maxPitch = maxPitch,
+                minPitch = visibleMinPitch,
+                maxPitch = visibleMaxPitch,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(start = 24.dp, end = 24.dp, bottom = 174.dp)
@@ -633,12 +755,26 @@ fun App(
                                         maxLines = 2
                                     )
                                 }
-                                Button(
-                                    onClick = { activeSidebar = SidebarMode.BIBLIOTECA },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155)),
-                                    modifier = Modifier.height(44.dp),
-                                    contentPadding = PaddingValues(horizontal = 12.dp)
-                                ) { Text("📁 Biblioteca", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+                                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Button(
+                                        onClick = { activeSidebar = SidebarMode.BIBLIOTECA },
+                                        colors = ButtonDefaults.buttonColors(containerColor = SurfaceLight, contentColor = TextContrast),
+                                        modifier = Modifier.height(40.dp),
+                                        contentPadding = PaddingValues(horizontal = 10.dp)
+                                    ) { Text("📁 Biblioteca", fontSize = 10.sp, fontWeight = FontWeight.Bold) }
+                                    Button(
+                                        onClick = { activeSidebar = SidebarMode.INSTRUMENTOS },
+                                        colors = ButtonDefaults.buttonColors(containerColor = AuroraViolet, contentColor = OnAuroraViolet),
+                                        modifier = Modifier.height(40.dp),
+                                        contentPadding = PaddingValues(horizontal = 10.dp)
+                                    ) { Text("🎹 Instrumentos", fontSize = 10.sp, fontWeight = FontWeight.Bold) }
+                                    Button(
+                                        onClick = { activeSidebar = SidebarMode.TEMAS },
+                                        colors = ButtonDefaults.buttonColors(containerColor = ElyPink, contentColor = OnElyPink),
+                                        modifier = Modifier.height(40.dp),
+                                        contentPadding = PaddingValues(horizontal = 10.dp)
+                                    ) { Text("🎨 Temas", fontSize = 10.sp, fontWeight = FontWeight.Bold) }
+                                }
                             }
 
                             HorizontalDivider(color = BorderGray.copy(alpha = 0.35f))
@@ -651,14 +787,7 @@ fun App(
                                 Button(
                                     onClick = {
                                         if (availableDevices.isEmpty()) {
-                                            availableDevices = midiDeviceManager.getAvailableDevices()
-                                                         if (selectedDevice !in availableDevices) {
-                                                             selectedDevice = availableDevices.firstOrNull().orEmpty()
-                                                         }
-                                                         if (selectedDevice !in availableDevices) {
-                                                             selectedDevice = availableDevices.firstOrNull().orEmpty()
-                                                         }
-                                            selectedDevice = availableDevices.firstOrNull().orEmpty()
+                                            refreshMidiDevices()
                                         } else {
                                             val current = availableDevices.indexOf(selectedDevice)
                                             selectedDevice = availableDevices[(current + 1).mod(availableDevices.size)]
@@ -676,17 +805,8 @@ fun App(
                                     )
                                 }
                                 Button(
-                                    onClick = {
-                                        availableDevices = midiDeviceManager.getAvailableDevices()
-                                                         if (selectedDevice !in availableDevices) {
-                                                             selectedDevice = availableDevices.firstOrNull().orEmpty()
-                                                         }
-                                                         if (selectedDevice !in availableDevices) {
-                                                             selectedDevice = availableDevices.firstOrNull().orEmpty()
-                                                         }
-                                        if (selectedDevice !in availableDevices) selectedDevice = availableDevices.firstOrNull().orEmpty()
-                                    },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155)),
+                                    onClick = { refreshMidiDevices() },
+                                    colors = ButtonDefaults.buttonColors(containerColor = SurfaceLight, contentColor = TextContrast),
                                     modifier = Modifier.height(44.dp),
                                     contentPadding = PaddingValues(horizontal = 12.dp)
                                 ) { Text("Buscar MIDI", fontSize = 10.sp, fontWeight = FontWeight.Bold) }
@@ -695,7 +815,7 @@ fun App(
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Button(
                                     onClick = { isPlaying = true },
-                                    colors = ButtonDefaults.buttonColors(containerColor = AuroraViolet),
+                                    colors = ButtonDefaults.buttonColors(containerColor = AuroraViolet, contentColor = OnAuroraViolet),
                                     modifier = Modifier.weight(1f).height(46.dp),
                                     contentPadding = PaddingValues(horizontal = 6.dp)
                                 ) { Text("Reproducir", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
@@ -706,7 +826,7 @@ fun App(
                                         activeKeys.clear()
                                         midiDeviceManager.stopAllNotes()
                                     },
-                                    colors = ButtonDefaults.buttonColors(containerColor = ElyPink),
+                                    colors = ButtonDefaults.buttonColors(containerColor = ElyPink, contentColor = OnElyPink),
                                     modifier = Modifier.weight(1f).height(46.dp),
                                     contentPadding = PaddingValues(horizontal = 6.dp)
                                 ) { Text("Detener", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
@@ -715,7 +835,7 @@ fun App(
                                         requestMidiFile()
                                     },
                                     enabled = onLoadMidiFile != null || onRequestMidiFile != null,
-                                    colors = ButtonDefaults.buttonColors(containerColor = ElyGreen, contentColor = Color.Black),
+                                    colors = ButtonDefaults.buttonColors(containerColor = ElyGreen, contentColor = OnElyGreen),
                                     modifier = Modifier.weight(1f).height(46.dp),
                                     contentPadding = PaddingValues(horizontal = 6.dp)
                                 ) { Text("Cargar MIDI", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
@@ -724,19 +844,28 @@ fun App(
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Button(
                                     onClick = { waitMode = !waitMode },
-                                    colors = ButtonDefaults.buttonColors(containerColor = if (waitMode) Color(0xFF38BDF8) else Color(0xFF334155)),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (waitMode) ElyGreen else SurfaceLight,
+                                        contentColor = if (waitMode) OnElyGreen else TextContrast
+                                    ),
                                     modifier = Modifier.weight(1f).height(44.dp),
                                     contentPadding = PaddingValues(horizontal = 5.dp)
                                 ) { Text("Espera: ${if (waitMode) "ON" else "OFF"}", fontSize = 10.sp, fontWeight = FontWeight.Bold) }
                                 Button(
                                     onClick = { internalSoundEnabled = !internalSoundEnabled },
-                                    colors = ButtonDefaults.buttonColors(containerColor = if (internalSoundEnabled) ElyGreen else Color(0xFF334155)),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (internalSoundEnabled) ElyGreen else SurfaceLight,
+                                        contentColor = if (internalSoundEnabled) OnElyGreen else TextContrast
+                                    ),
                                     modifier = Modifier.weight(1f).height(44.dp),
                                     contentPadding = PaddingValues(horizontal = 5.dp)
                                 ) { Text("Sonido: ${if (internalSoundEnabled) "ON" else "OFF"}", fontSize = 10.sp, fontWeight = FontWeight.Bold) }
                                 Button(
                                     onClick = { metronomeEnabled = !metronomeEnabled },
-                                    colors = ButtonDefaults.buttonColors(containerColor = if (metronomeEnabled) ElyGreen else Color(0xFF334155)),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (metronomeEnabled) ElyGreen else SurfaceLight,
+                                        contentColor = if (metronomeEnabled) OnElyGreen else TextContrast
+                                    ),
                                     modifier = Modifier.weight(1f).height(44.dp),
                                     contentPadding = PaddingValues(horizontal = 5.dp)
                                 ) { Text("Metro: ${if (metronomeEnabled) "ON" else "OFF"}", fontSize = 10.sp, fontWeight = FontWeight.Bold) }
@@ -749,17 +878,20 @@ fun App(
                                         midiDeviceManager.stopAllNotes()
                                         playbackRestartToken++
                                     },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155)),
+                                    colors = ButtonDefaults.buttonColors(containerColor = SurfaceLight, contentColor = TextContrast),
                                     modifier = Modifier.weight(1f).height(44.dp)
                                 ) { Text("Reiniciar", fontSize = 10.sp, fontWeight = FontWeight.Bold) }
                                 Button(
                                     onClick = { loopEnabled = !loopEnabled },
-                                    colors = ButtonDefaults.buttonColors(containerColor = if (loopEnabled) ElyGreen else Color(0xFF334155)),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (loopEnabled) ElyGreen else SurfaceLight,
+                                        contentColor = if (loopEnabled) OnElyGreen else TextContrast
+                                    ),
                                     modifier = Modifier.weight(1f).height(44.dp)
                                 ) { Text("Bucle: ${if (loopEnabled) "ON" else "OFF"}", fontSize = 10.sp, fontWeight = FontWeight.Bold) }
                                 Button(
                                     onClick = { mappingMode = true; mappingStep = 0 },
-                                    colors = ButtonDefaults.buttonColors(containerColor = AuroraViolet),
+                                    colors = ButtonDefaults.buttonColors(containerColor = AuroraViolet, contentColor = OnAuroraViolet),
                                     modifier = Modifier.weight(1f).height(44.dp),
                                     contentPadding = PaddingValues(horizontal = 5.dp)
                                 ) { Text("Mapear", fontSize = 10.sp, fontWeight = FontWeight.Bold) }
@@ -779,7 +911,7 @@ fun App(
                                 )
                                 Button(
                                     onClick = { noteLabelMode = noteLabelMode.next() },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155)),
+                                    colors = ButtonDefaults.buttonColors(containerColor = SurfaceLight, contentColor = TextContrast),
                                     modifier = Modifier.height(44.dp),
                                     contentPadding = PaddingValues(horizontal = 12.dp)
                                 ) {
@@ -800,7 +932,7 @@ fun App(
                                 Button(
                                     onClick = { countInBars = (countInBars + 1) % 3 },
                                     enabled = !isRecording && !isCountInActive,
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155)),
+                                    colors = ButtonDefaults.buttonColors(containerColor = SurfaceLight, contentColor = TextContrast),
                                     modifier = Modifier.weight(1f).height(46.dp),
                                     contentPadding = PaddingValues(horizontal = 5.dp)
                                 ) { Text("Cuenta: $countInBars", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
@@ -819,13 +951,13 @@ fun App(
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Button(
                                         onClick = { loadedSong = take; currentTimeMs = 0L; isPlaying = true },
-                                        colors = ButtonDefaults.buttonColors(containerColor = AuroraViolet),
+                                        colors = ButtonDefaults.buttonColors(containerColor = AuroraViolet, contentColor = OnAuroraViolet),
                                         modifier = Modifier.weight(1f).height(44.dp)
                                     ) { Text("Escuchar toma", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
                                     Button(
                                         onClick = { requestExport(take) },
                                         enabled = onExportMidiFile != null || onRequestExportMidiFile != null,
-                                        colors = ButtonDefaults.buttonColors(containerColor = ElyGreen, contentColor = Color.Black),
+                                        colors = ButtonDefaults.buttonColors(containerColor = ElyGreen, contentColor = OnElyGreen),
                                         modifier = Modifier.weight(1f).height(44.dp)
                                     ) { Text("Exportar MIDI", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
                                 }
@@ -959,15 +1091,7 @@ fun App(
                                                 HorizontalDivider(color = BorderGray)
                                                 DropdownMenuItem(
                                                     text = { Text("Buscar de nuevo ↻", color = ElyCream, fontSize = 12.sp) },
-                                                    onClick = {
-                                                        availableDevices = midiDeviceManager.getAvailableDevices()
-                                                         if (selectedDevice !in availableDevices) {
-                                                             selectedDevice = availableDevices.firstOrNull().orEmpty()
-                                                         }
-                                                         if (selectedDevice !in availableDevices) {
-                                                             selectedDevice = availableDevices.firstOrNull().orEmpty()
-                                                         }
-                                                    },
+                                                    onClick = { refreshMidiDevices() },
                                                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
                                                 )
                                             }
@@ -1043,9 +1167,7 @@ fun App(
                                                 HorizontalDivider(color = BorderGray)
                                                 DropdownMenuItem(
                                                     text = { Text("Buscar de nuevo ↻", color = ElyCream, fontSize = 12.sp) },
-                                                    onClick = {
-                                                        audioDevices = midiDeviceManager.getAudioOutputs()
-                                                    },
+                                                    onClick = { refreshAudioDevices() },
                                                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
                                                 )
                                             }
@@ -1069,12 +1191,12 @@ fun App(
                                     // Reproducir
                                     Button(
                                         onClick = { isPlaying = true },
-                                        colors = ButtonDefaults.buttonColors(containerColor = AuroraViolet),
+                                        colors = ButtonDefaults.buttonColors(containerColor = AuroraViolet, contentColor = OnAuroraViolet),
                                         shape = RoundedCornerShape(8.dp),
                                         modifier = Modifier.height(38.dp),
                                         contentPadding = PaddingValues(horizontal = 16.dp)
                                     ) {
-                                        Text("Reproducir", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                        Text("Reproducir", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                     }
                                     
                                     // Detener
@@ -1086,7 +1208,7 @@ fun App(
                                         },
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = ElyPink,
-                                            contentColor = Color.White
+                                            contentColor = OnElyPink
                                         ),
                                         shape = RoundedCornerShape(8.dp),
                                         modifier = Modifier.height(38.dp),
@@ -1100,20 +1222,20 @@ fun App(
                                         onClick = {
                                             requestMidiFile()
                                         },
-                                        colors = ButtonDefaults.buttonColors(containerColor = ElyGreen),
+                                        colors = ButtonDefaults.buttonColors(containerColor = ElyGreen, contentColor = OnElyGreen),
                                         shape = RoundedCornerShape(8.dp),
                                         modifier = Modifier.height(38.dp),
                                         contentPadding = PaddingValues(horizontal = 16.dp)
                                     ) {
-                                        Text("Cargar MIDI", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                        Text("Cargar MIDI", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                     }
                                     
                                     // Espera
                                     Button(
                                         onClick = { waitMode = !waitMode },
                                         colors = ButtonDefaults.buttonColors(
-                                            containerColor = if (waitMode) Color(0xFF38BDF8) else Color(0xFF334155),
-                                            contentColor = if (waitMode) Color.Black else Color.White
+                                            containerColor = if (waitMode) ElyGreen else SurfaceLight,
+                                            contentColor = if (waitMode) OnElyGreen else TextContrast
                                         ),
                                         shape = RoundedCornerShape(8.dp),
                                         modifier = Modifier.height(38.dp),
@@ -1135,8 +1257,8 @@ fun App(
                                     Button(
                                         onClick = { internalSoundEnabled = !internalSoundEnabled },
                                         colors = ButtonDefaults.buttonColors(
-                                            containerColor = if (internalSoundEnabled) ElyGreen else Color(0xFF334155),
-                                            contentColor = if (internalSoundEnabled) Color.Black else Color.White
+                                            containerColor = if (internalSoundEnabled) ElyGreen else SurfaceLight,
+                                            contentColor = if (internalSoundEnabled) OnElyGreen else TextContrast
                                         ),
                                         shape = RoundedCornerShape(8.dp),
                                         modifier = Modifier.height(38.dp),
@@ -1153,8 +1275,8 @@ fun App(
                                     Button(
                                         onClick = { metronomeEnabled = !metronomeEnabled },
                                         colors = ButtonDefaults.buttonColors(
-                                            containerColor = if (metronomeEnabled) ElyGreen else Color(0xFF334155),
-                                            contentColor = if (metronomeEnabled) Color.Black else Color.White
+                                            containerColor = if (metronomeEnabled) ElyGreen else SurfaceLight,
+                                            contentColor = if (metronomeEnabled) OnElyGreen else TextContrast
                                         ),
                                         shape = RoundedCornerShape(8.dp),
                                         modifier = Modifier.height(38.dp),
@@ -1265,7 +1387,7 @@ fun App(
                                                 isEditingBpm = false
                                                 bpmInputText = ""
                                             },
-                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155), contentColor = ElyCream),
+                                            colors = ButtonDefaults.buttonColors(containerColor = ElyCream, contentColor = OnElyCream),
                                             shape = RoundedCornerShape(8.dp),
                                             contentPadding = PaddingValues(horizontal = 12.dp),
                                             modifier = Modifier.height(38.dp)
@@ -1323,7 +1445,7 @@ fun App(
                                                 mappingMode = false
                                                 mappingStep = 0
                                             },
-                                            colors = ButtonDefaults.buttonColors(containerColor = ElyPink, contentColor = Color.White),
+                                            colors = ButtonDefaults.buttonColors(containerColor = ElyPink, contentColor = OnElyPink),
                                             shape = RoundedCornerShape(8.dp),
                                             modifier = Modifier.height(38.dp),
                                             contentPadding = PaddingValues(horizontal = 16.dp)
@@ -1338,19 +1460,19 @@ fun App(
                                                 midiDeviceManager.stopAllNotes()
                                                 playbackRestartToken++
                                             },
-                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155)),
+                                            colors = ButtonDefaults.buttonColors(containerColor = SurfaceLight, contentColor = TextContrast),
                                             shape = RoundedCornerShape(8.dp),
                                             modifier = Modifier.height(38.dp),
                                             contentPadding = PaddingValues(horizontal = 14.dp)
                                         ) {
-                                            Text("Reiniciar", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                            Text("Reiniciar", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                                         }
 
                                         Button(
                                             onClick = { loopEnabled = !loopEnabled },
                                             colors = ButtonDefaults.buttonColors(
-                                                containerColor = if (loopEnabled) ElyGreen else Color(0xFF334155),
-                                                contentColor = if (loopEnabled) Color.Black else Color.White
+                                                containerColor = if (loopEnabled) ElyGreen else SurfaceLight,
+                                                contentColor = if (loopEnabled) OnElyGreen else TextContrast
                                             ),
                                             shape = RoundedCornerShape(8.dp),
                                             modifier = Modifier.height(38.dp),
@@ -1365,7 +1487,7 @@ fun App(
 
                                         Button(
                                             onClick = { noteLabelMode = noteLabelMode.next() },
-                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155)),
+                                            colors = ButtonDefaults.buttonColors(containerColor = SurfaceLight, contentColor = TextContrast),
                                             shape = RoundedCornerShape(8.dp),
                                             modifier = Modifier.height(38.dp),
                                             contentPadding = PaddingValues(horizontal = 12.dp)
@@ -1383,12 +1505,12 @@ fun App(
                                                 mappingMode = true
                                                 mappingStep = 0
                                             },
-                                            colors = ButtonDefaults.buttonColors(containerColor = AuroraViolet),
+                                            colors = ButtonDefaults.buttonColors(containerColor = AuroraViolet, contentColor = OnAuroraViolet),
                                             shape = RoundedCornerShape(8.dp),
                                             modifier = Modifier.height(38.dp),
                                             contentPadding = PaddingValues(horizontal = 16.dp)
                                         ) {
-                                            Text("Mapear Rango 🎹", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                            Text("Mapear Rango 🎹", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                                         }
 
                                     }
@@ -1414,7 +1536,7 @@ fun App(
                                         enabled = !isCountInActive,
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = if (isRecording) ElyPink else Color(0xFFDC2626),
-                                            contentColor = Color.White
+                                            contentColor = OnElyPink
                                         ),
                                         shape = RoundedCornerShape(8.dp),
                                         modifier = Modifier.height(38.dp),
@@ -1430,7 +1552,7 @@ fun App(
                                     Button(
                                         onClick = { countInBars = (countInBars + 1) % 3 },
                                         enabled = !isRecording && !isCountInActive,
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155)),
+                                        colors = ButtonDefaults.buttonColors(containerColor = SurfaceLight, contentColor = TextContrast),
                                         shape = RoundedCornerShape(8.dp),
                                         modifier = Modifier.height(38.dp),
                                         contentPadding = PaddingValues(horizontal = 12.dp)
@@ -1484,7 +1606,7 @@ fun App(
                                                     lastRecording = renamed
                                                 }
                                             },
-                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155)),
+                                            colors = ButtonDefaults.buttonColors(containerColor = SurfaceLight, contentColor = TextContrast),
                                             shape = RoundedCornerShape(8.dp),
                                             modifier = Modifier.height(34.dp),
                                             contentPadding = PaddingValues(horizontal = 10.dp)
@@ -1498,7 +1620,7 @@ fun App(
                                                 currentTimeMs = 0L
                                                 isPlaying = true
                                             },
-                                            colors = ButtonDefaults.buttonColors(containerColor = AuroraViolet),
+                                            colors = ButtonDefaults.buttonColors(containerColor = AuroraViolet, contentColor = OnAuroraViolet),
                                             shape = RoundedCornerShape(8.dp),
                                             modifier = Modifier.height(34.dp),
                                             contentPadding = PaddingValues(horizontal = 10.dp)
@@ -1509,7 +1631,7 @@ fun App(
                                         Button(
                                             onClick = { requestExport(take) },
                                             enabled = onExportMidiFile != null || onRequestExportMidiFile != null,
-                                            colors = ButtonDefaults.buttonColors(containerColor = ElyGreen, contentColor = Color.Black),
+                                            colors = ButtonDefaults.buttonColors(containerColor = ElyGreen, contentColor = OnElyGreen),
                                             shape = RoundedCornerShape(8.dp),
                                             modifier = Modifier.height(34.dp),
                                             contentPadding = PaddingValues(horizontal = 10.dp)
@@ -1531,8 +1653,15 @@ fun App(
                 // PANEL DE CONTROL COLAPSADO (Al reproducir)
                 Card(
                     modifier = Modifier
-                        .padding(top = 24.dp, end = 24.dp)
-                        .align(Alignment.TopEnd)
+                        .padding(
+                            top = when {
+                                centerPlaybackControls -> 54.dp
+                                simplifyPlaybackChrome -> 46.dp
+                                else -> 24.dp
+                            },
+                            end = if (centerPlaybackControls) 0.dp else 24.dp
+                        )
+                        .align(if (centerPlaybackControls) Alignment.TopCenter else Alignment.TopEnd)
                         .border(1.dp, BorderGray.copy(alpha = 0.5f), RoundedCornerShape(8.dp)),
                     shape = RoundedCornerShape(8.dp),
                     colors = CardDefaults.cardColors(
@@ -1563,7 +1692,7 @@ fun App(
                         ) {
                             Text(
                                 text = "⏸",
-                                color = Color.White,
+                                color = OnAuroraViolet,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -1573,7 +1702,7 @@ fun App(
                             modifier = Modifier
                                 .height(28.dp)
                                 .clip(RoundedCornerShape(6.dp))
-                                .background(Color(0xFF334155))
+                                .background(SurfaceLight)
                                 .clickable {
                                     currentTimeMs = 0L
                                     activeKeys.clear()
@@ -1583,21 +1712,21 @@ fun App(
                                 .padding(horizontal = 9.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("Reiniciar", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            Text("Reiniciar", color = TextContrast, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                         }
 
                         Box(
                             modifier = Modifier
                                 .height(28.dp)
                                 .clip(RoundedCornerShape(6.dp))
-                                .background(if (loopEnabled) ElyGreen else Color(0xFF334155))
+                                .background(if (loopEnabled) ElyGreen else SurfaceLight)
                                 .clickable { loopEnabled = !loopEnabled }
                                 .padding(horizontal = 9.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 if (loopEnabled) "Bucle ON" else "Bucle OFF",
-                                color = if (loopEnabled) Color.Black else Color.White,
+                                color = if (loopEnabled) OnElyGreen else TextContrast,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -1674,6 +1803,20 @@ fun App(
                             Text("Instrumentos", color = TextMain, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
                     }
+
+                    Box(
+                        modifier = Modifier
+                            .width(135.dp)
+                            .height(38.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
+                            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
+                            .clickable { activeSidebar = SidebarMode.TEMAS }
+                            .padding(horizontal = 12.dp),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        Text("🎨  Temas", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
 
@@ -1706,10 +1849,15 @@ fun App(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = if (activeSidebar == SidebarMode.BIBLIOTECA) "Biblioteca MIDI" else "Instrumentos",
+                                text = when (activeSidebar) {
+                                    SidebarMode.BIBLIOTECA -> "Biblioteca MIDI (${songList.size})"
+                                    SidebarMode.INSTRUMENTOS -> "Instrumentos"
+                                    SidebarMode.TEMAS -> "Temas"
+                                    null -> ""
+                                },
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = AuroraViolet
+                                color = TextMain
                             )
                             IconButton(
                                 onClick = { activeSidebar = null },
@@ -1820,6 +1968,25 @@ fun App(
                                     }
                                 }
                             }
+                        } else if (activeSidebar == SidebarMode.TEMAS) {
+                            ThemeManagerPanel(
+                                themes = installedThemes,
+                                selectedThemeId = selectedThemeId,
+                                useDynamicColor = useDynamicColor,
+                                canImport = onRequestThemeFile != null,
+                                canExport = onRequestExportTheme != null,
+                                onSelect = { selectedThemeId = it },
+                                onToggleDynamicColor = { useDynamicColor = it },
+                                onImport = { onRequestThemeFile?.invoke() },
+                                onExport = { theme ->
+                                    onRequestExportTheme?.invoke("${theme.id.substringAfterLast('.')}.elytheme.json", ThemeJsonCodec.encode(theme))
+                                },
+                                onDelete = { theme ->
+                                    installedThemes.remove(theme)
+                                    if (selectedThemeId == theme.id) selectedThemeId = ThemeDefaults.Aurora.id
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
                         } else {
                             val instrumentsList = listOf(
                                 Pair(InstrumentType.PIANO_ACUSTICO, "🎹 Piano Acústico"),
@@ -1898,8 +2065,37 @@ fun App(
                         midiDeviceManager.playNoteDirect(pitch, 0)
                     }
                 },
-                minPitch = minPitch,
-                maxPitch = maxPitch,
+                minPitch = visibleMinPitch,
+                maxPitch = visibleMaxPitch,
+                onZoom = { scaleChange ->
+                    keyboardZoomAccumulator *= scaleChange
+                    val zoomDirection = when {
+                        keyboardZoomAccumulator >= 1.12f -> -1
+                        keyboardZoomAccumulator <= 0.89f -> 1
+                        else -> 0
+                    }
+                    if (zoomDirection != 0) {
+                        val mappedCount = maxPitch - minPitch + 1
+                        val currentCount = visibleMaxPitch - visibleMinPitch + 1
+                        val minimumCount = minOf(12, mappedCount)
+                        val targetCount = (currentCount + zoomDirection * 12)
+                            .coerceIn(minimumCount, mappedCount)
+                        val centerPitch = (visibleMinPitch + visibleMaxPitch) / 2
+                        var targetMin = centerPitch - (targetCount - 1) / 2
+                        var targetMax = targetMin + targetCount - 1
+                        if (targetMin < minPitch) {
+                            targetMin = minPitch
+                            targetMax = targetMin + targetCount - 1
+                        }
+                        if (targetMax > maxPitch) {
+                            targetMax = maxPitch
+                            targetMin = targetMax - targetCount + 1
+                        }
+                        visibleMinPitch = targetMin
+                        visibleMaxPitch = targetMax
+                        keyboardZoomAccumulator = 1f
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(166.dp)
@@ -1908,6 +2104,23 @@ fun App(
                     .background(SurfaceGray)
                     .border(1.dp, BorderGray)
             )
+
+            userMessage?.let { message ->
+                Snackbar(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(start = 16.dp, end = 16.dp, bottom = 184.dp),
+                    action = {
+                        TextButton(onClick = { userMessage = null }) {
+                            Text("Cerrar", color = ElyGreen)
+                        }
+                    },
+                    containerColor = SurfaceGray,
+                    contentColor = TextMain
+                ) {
+                    Text(message, fontSize = 12.sp)
+                }
+            }
 
             if (isWaitingForMidiTrigger) {
                 Box(
@@ -1955,7 +2168,7 @@ fun App(
                             ) {
                                 Button(
                                     onClick = { isWaitingForMidiTrigger = false },
-                                    colors = ButtonDefaults.buttonColors(containerColor = AuroraViolet)
+                                    colors = ButtonDefaults.buttonColors(containerColor = AuroraViolet, contentColor = OnAuroraViolet)
                                 ) {
                                     Text("Iniciar ya", fontWeight = FontWeight.Bold)
                                 }
@@ -1978,126 +2191,3 @@ fun App(
     }
 }
 
-fun getNoteName(pitch: Int): String {
-    val notes = listOf("Do", "Do#", "Re", "Re#", "Mi", "Fa", "Fa#", "Sol", "Sol#", "La", "La#", "Si")
-    val octave = (pitch / 12) - 1
-    val noteName = notes[pitch % 12]
-    return "$noteName$octave"
-}
-
-fun generateDemoSong(): Song {
-    val notes = mutableListOf<NoteEvent>()
-    val progressions = listOf(
-        listOf(60, 64, 67, 72), // C Major
-        listOf(57, 60, 64, 69), // A minor
-        listOf(53, 57, 60, 65), // F Major
-        listOf(55, 59, 62, 67)  // G Major
-    )
-    
-    var timeMs = 1200L
-    val duration = 400L
-    val step = 200L
-
-    repeat(2) {
-        for (chord in progressions) {
-            for ((idx, pitch) in chord.withIndex()) {
-                notes.add(NoteEvent(pitch, timeMs + (idx * step), duration, 85, 1))
-            }
-            timeMs += 1000L
-            
-            for (pitch in chord) {
-                notes.add(NoteEvent(pitch, timeMs, 800L, 95, 2))
-            }
-            timeMs += 1200L
-        }
-    }
-
-    return Song("Bach Prelude C-Major (Demo)", timeMs + 1000L, notes, 120.0, isDemo = true, difficulty = Difficulty.AVANZADO)
-}
-
-fun generateScaleSong(): Song {
-    val notes = mutableListOf<NoteEvent>()
-    val scaleNotes = listOf(60, 62, 64, 65, 67, 69, 71, 72, 72, 71, 69, 67, 65, 64, 62, 60)
-    var timeMs = 800L
-    val duration = 250L
-    val step = 300L
-    for (note in scaleNotes) {
-        notes.add(NoteEvent(note, timeMs, duration, 90, 1))
-        timeMs += step
-    }
-    return Song("Escala Do Mayor (Prueba)", timeMs + 400L, notes, 120.0, isDemo = true, difficulty = Difficulty.FACIL)
-}
-
-fun generateBellaCiaoSong(): Song {
-    val notes = mutableListOf<NoteEvent>()
-    var t = 800L
-    val quarter = 300L
-    
-    // Melodía famosa de "Bella Ciao"
-    val melody = listOf(
-        // Primera frase
-        Pair(57, quarter), Pair(60, quarter), Pair(62, quarter), Pair(64, quarter * 2), // La-Do-Re-Mi
-        Pair(57, quarter), Pair(60, quarter), Pair(62, quarter), Pair(64, quarter * 2), // La-Do-Re-Mi
-        Pair(57, quarter), Pair(60, quarter), Pair(62, quarter), Pair(64, quarter),     // La-Do-Re-Mi
-        Pair(67, quarter), Pair(69, quarter), Pair(67, quarter), Pair(64, quarter),     // Sol-La-Sol-Mi
-        Pair(69, quarter * 2),                                                          // La
-        // Segunda frase
-        Pair(69, quarter), Pair(69, quarter), Pair(69, quarter), Pair(67, quarter),     // La-La-La-Sol
-        Pair(64, quarter), Pair(62, quarter * 2),                                       // Mi-Re
-        Pair(60, quarter), Pair(62, quarter), Pair(64, quarter * 2),                    // Do-Re-Mi
-        Pair(62, quarter), Pair(60, quarter), Pair(57, quarter * 2)                     // Re-Do-La
-    )
-
-    for ((pitch, duration) in melody) {
-        notes.add(NoteEvent(pitch, t, duration - 30L, 95, 1))
-        // Acompañamiento simple de bajo
-        if (t % 1200 == 0L) {
-            notes.add(NoteEvent(pitch - 12, t, duration * 2, 70, 2))
-        }
-        t += duration
-    }
-    
-    return Song("Bella Ciao (Demo)", t + 1000L, notes, 125.0, isDemo = true, difficulty = Difficulty.INTERMEDIO)
-}
-
-fun generateGymnopedieSong(): Song {
-    val notes = mutableListOf<NoteEvent>()
-    var t = 1000L
-    val beat = 800L // 75 BPM aprox
-    
-    // Acompañamiento lento Satie (Bajo y luego acorde)
-    repeat(4) { idx ->
-        // Compás 1: G Maj
-        notes.add(NoteEvent(43, t, beat * 2, 80, 2)) // Bajo G
-        notes.add(NoteEvent(59, t + beat, beat * 2, 70, 2)) // B3
-        notes.add(NoteEvent(62, t + beat, beat * 2, 70, 2)) // D4
-        notes.add(NoteEvent(67, t + beat, beat * 2, 70, 2)) // G4
-        t += beat * 3
-        
-        // Compás 2: D Maj7
-        notes.add(NoteEvent(38, t, beat * 2, 80, 2)) // Bajo D
-        notes.add(NoteEvent(57, t + beat, beat * 2, 70, 2)) // A3
-        notes.add(NoteEvent(61, t + beat, beat * 2, 70, 2)) // C#4
-        notes.add(NoteEvent(66, t + beat, beat * 2, 70, 2)) // F#4
-        t += beat * 3
-    }
-    
-    // Melodía flotante arriba
-    var mt = 1000L + beat * 3
-    val melody = listOf(
-        Pair(69, beat * 3), // A4
-        Pair(71, beat * 3), // B4
-        Pair(74, beat * 3), // D5
-        Pair(76, beat * 3), // E5
-        Pair(71, beat * 3), // B4
-        Pair(67, beat * 3), // G4
-        Pair(64, beat * 6)  // E4
-    )
-    
-    for ((pitch, duration) in melody) {
-        notes.add(NoteEvent(pitch, mt, duration - 50L, 85, 1))
-        mt += duration
-    }
-    
-    return Song("Gymnopédie No. 1 (Demo)", mt + 1000L, notes, 72.0, isDemo = true, difficulty = Difficulty.FACIL)
-}

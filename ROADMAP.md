@@ -17,18 +17,12 @@ cambios de código.
 
 ## Por implementar
 
-### Versión 1.0.3 — Correcciones y pulido
+### Próxima actualización — Validación y pulido Android
 
 Estado: **Planificado**
 
-- Soporte correcto de caracteres españoles (acentos, ñ) en la biblioteca.
-- Toggle de Sonido Virtual sincronizado con Local Control del teclado MIDI físico.
-- Layout optimizado para modo horizontal en teléfonos.
-- Botón de Instrumentos accesible en portrait en la interfaz compacta.
 - Pruebas adicionales en distintos dispositivos Android reales.
 - Ajustes de latencia y tamaño de buffer por fabricante.
-- Mejoras de mensajes de conexión y errores MIDI.
-- APK y AAB release firmados con una clave permanente.
 
 ### Práctica por secciones
 
@@ -43,7 +37,6 @@ Estado: **Planificado**
 
 Estado: **Planificado**
 
-- Colores independientes para mano izquierda y derecha.
 - Selector de pistas y canales MIDI.
 - Silenciar, reproducir en solitario u ocultar una pista.
 - Modo de espera aplicado solamente a una mano.
@@ -160,7 +153,7 @@ Estado: **Planificado**
 
 ### Sistema de colores y temas visuales
 
-Estado: **En evaluación**
+Estado: **Completado en 1.0.5**
 
 Separar la lógica de colores del código de UI para que el usuario pueda
 personalizar la paleta de la aplicación sin tocar código.
@@ -174,7 +167,7 @@ personalizar la paleta de la aplicación sin tocar código.
 
 ### Rediseño visual para Android — Material Expressive
 
-Estado: **En evaluación**
+Estado: **Completado parcialmente en 1.0.5**
 
 La interfaz de Android comparte actualmente el mismo diseño que Desktop. Para
 Android existe una oportunidad de aprovechar las APIs nativas de Material 3 /
@@ -302,7 +295,6 @@ No se ofrecerá una opción genérica como "encontrado en Internet".
 
 Estado: **Idea**
 
-- Temas de color personalizados.
 - Modo concierto sin paneles visibles.
 - Captura de video del piano roll.
 - Compartir una interpretación como imagen o video.
@@ -351,6 +343,23 @@ Estado: **Idea**
 - Correcciones de diseño visual en selectores y componentes de control.
 - Envío automático de "Local Control: OFF" para silenciar bocinas internas de teclados físicos conectados.
 - Soporte para audio estéreo real de 16 bits en Little Endian para compatibilidad con auriculares Bluetooth/USB.
+
+### Versión 1.0.5
+
+- APK y AAB Android firmados con una identidad permanente.
+- Versionado unificado y validación automática de firma e identidad.
+- Punto de composición `App.kt` pequeño y estructura por `app`, `core`, `feature` y `platform`.
+- Lógica determinista del reproductor separada de Compose y cubierta por pruebas.
+- Barra de progreso interactiva con tiempo actual y duración.
+- Acceso a Instrumentos en portrait y layout compacto para teléfonos horizontales.
+- Pantalla activa durante reproducción y grabación en Android.
+- Mensajes visibles ante errores de dispositivos MIDI y audio.
+- Temas comunitarios JSON importables y exportables con validación y persistencia.
+- Temas integrados Aurora, Clásico y Alto Contraste.
+- Tokens para manos, blancas, negras/bemoles, pulsación, errores, estelas y partículas.
+- Material 3, movimiento expresivo y Dynamic Color opcional en Android 12+.
+- Zoom multitáctil del teclado virtual en pasos de octava, centrado y limitado por el rango mapeado.
+- Sincronización del rango visible entre teclado y piano roll durante el gesto de pellizco.
 
 ---
 

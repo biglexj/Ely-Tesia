@@ -5,6 +5,34 @@
     alias(libs.plugins.compose.compiler)
 }
 
+val elytesiaVersionName = providers.gradleProperty("elytesia.versionName").get()
+val elytesiaVersionCode = providers.gradleProperty("elytesia.versionCode").get().toInt()
+val signingProperties = rootProject.file("keystore.properties")
+    .takeIf { it.isFile }
+    ?.readLines()
+    ?.mapNotNull { line ->
+        line.takeUnless { it.isBlank() || it.trimStart().startsWith("#") }
+            ?.split('=', limit = 2)
+            ?.takeIf { it.size == 2 }
+            ?.let { it[0].trim() to it[1].trim() }
+    }
+    ?.toMap()
+    .orEmpty()
+fun signingValue(propertyName: String, environmentName: String): String? =
+    signingProperties[propertyName]?.takeIf(String::isNotBlank)
+        ?: System.getenv(environmentName)?.takeIf(String::isNotBlank)
+
+val releaseStorePath = signingValue("storeFile", "ELYTESIA_KEYSTORE_FILE")
+val releaseStorePassword = signingValue("storePassword", "ELYTESIA_KEYSTORE_PASSWORD")
+val releaseKeyAlias = signingValue("keyAlias", "ELYTESIA_KEY_ALIAS")
+val releaseKeyPassword = signingValue("keyPassword", "ELYTESIA_KEY_PASSWORD")
+val hasReleaseSigning = listOf(
+    releaseStorePath,
+    releaseStorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword
+).all { !it.isNullOrBlank() }
+
 kotlin {
     androidTarget {
         compilerOptions {
@@ -23,6 +51,7 @@ kotlin {
                 implementation(compose.ui)
                 implementation(compose.components.resources)
                 implementation(compose.components.uiToolingPreview)
+                implementation(libs.kotlinx.serialization.json)
             }
         }
 
@@ -54,8 +83,23 @@ android {
         applicationId = "com.biglexj.elytesia"
         minSdk = 24
         targetSdk = 34
-        versionCode = 4
-        versionName = "1.0.3"
+        versionCode = elytesiaVersionCode
+        versionName = elytesiaVersionName
+    }
+
+    val permanentReleaseSigning = if (hasReleaseSigning) {
+        signingConfigs.create("permanentRelease") {
+            storeFile = rootProject.file(requireNotNull(releaseStorePath))
+            storePassword = requireNotNull(releaseStorePassword)
+            keyAlias = requireNotNull(releaseKeyAlias)
+            keyPassword = requireNotNull(releaseKeyPassword)
+        }
+    } else {
+        null
+    }
+
+    buildTypes.getByName("release") {
+        permanentReleaseSigning?.let { signingConfig = it }
     }
     
     compileOptions {
@@ -73,13 +117,13 @@ compose.desktop {
                 org.jetbrains.compose.desktop.application.dsl.TargetFormat.Exe
             )
             packageName = "ElyTesia"
-            packageVersion = "1.0.3"
+            packageVersion = elytesiaVersionName
             vendor = "biglexj"
 
             windows {
                 iconFile.set(project.file("src/desktopMain/resources/elytesia.ico"))
-                msiPackageVersion = "1.0.3"
-                exePackageVersion = "1.0.3"
+                msiPackageVersion = elytesiaVersionName
+                exePackageVersion = elytesiaVersionName
                 upgradeUuid = "28da0bdd-0ec9-3096-9fe8-2c59b53ec0ab"
                 shortcut = true
                 menu = true
