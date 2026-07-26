@@ -3,10 +3,7 @@ package com.biglexj.elytesia.midi
 import com.biglexj.elytesia.model.ControlEvent
 import com.biglexj.elytesia.model.NoteEvent
 import com.biglexj.elytesia.model.Song
-import com.biglexj.elytesia.generateBellaCiaoSong
-import com.biglexj.elytesia.generateDemoSong
-import com.biglexj.elytesia.generateGymnopedieSong
-import com.biglexj.elytesia.generateScaleSong
+import com.biglexj.elytesia.features.library.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

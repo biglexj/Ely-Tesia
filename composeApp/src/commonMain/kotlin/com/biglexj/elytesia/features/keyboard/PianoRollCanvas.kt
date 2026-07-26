@@ -1,4 +1,5 @@
-package com.biglexj.elytesia.ui
+package com.biglexj.elytesia.features.keyboard
+
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
@@ -44,19 +45,11 @@ fun PianoRollCanvas(
     val themeEffects = LocalElyThemeEffects.current
 
     // Generador de partículas para las notas activas
-    LaunchedEffect(activeKeys.toMap(), activeTracks.toMap(), currentTimeMs) {
+    LaunchedEffect(activeKeys.toMap(), currentTimeMs) {
         if (activeKeys.isNotEmpty()) {
-            activeKeys.forEach { (pitch, velocity) ->
-                // Generar 1-2 partículas por cada tecla activa en cada tick
-                val isBlack = when (pitch % 12) {
-                    1, 3, 6, 8, 10 -> true
-                    else -> false
-                }
-                val particleColor = if (isBlack) {
-                    musicTheme.blackKeyPressed
-                } else {
-                    if (HandColorResolver.isLeftHand(pitch, activeTracks[pitch])) musicTheme.particleLeft else musicTheme.particleRight
-                }
+            activeKeys.forEach { (pitch, track) ->
+                // Usar la resolución de color unificada para que coincida exactamente con la nota y la tecla
+                val particleColor = HandColorResolver.color(musicTheme, pitch, track)
                 
                 // Necesitamos calcular el X aproximado de la nota
                 // Para esto pasaremos un disparador de partículas temporal
@@ -171,9 +164,8 @@ fun PianoRollCanvas(
             val drawHeight = drawBottom - drawY
 
             if (drawHeight > 0f) {
-                // Color según el pitch o canal (Violeta, Verde, Rosa)
-                val baseColor = if (isBlackKey(note.pitch)) musicTheme.blackKeyPressed
-                    else HandColorResolver.color(musicTheme, note.pitch, note.track)
+                // Color unificado según pitch y canal (Mano izquierda, mano derecha, accidentales)
+                val baseColor = HandColorResolver.color(musicTheme, note.pitch, note.track)
 
                 val brush = Brush.verticalGradient(
                     colors = listOf(

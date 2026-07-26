@@ -1,5 +1,6 @@
-package com.biglexj.elytesia
+package com.biglexj.elytesia.features.player
 
+import com.biglexj.elytesia.features.player.PlaybackLogic
 import com.biglexj.elytesia.model.NoteEvent
 import com.biglexj.elytesia.model.Song
 import kotlin.test.Test

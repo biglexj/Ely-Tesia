@@ -10,6 +10,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
+import com.biglexj.elytesia.features.library.*
 import com.biglexj.elytesia.midi.DesktopMidiParser
 import com.biglexj.elytesia.midi.getPlatformMidiDeviceManager
 import com.biglexj.elytesia.storage.DesktopLocalStorage

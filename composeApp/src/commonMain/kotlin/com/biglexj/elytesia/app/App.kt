@@ -2,6 +2,7 @@ package com.biglexj.elytesia
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import com.biglexj.elytesia.features.shell.ElyTesiaAppContent
 import com.biglexj.elytesia.midi.MidiDeviceManager
 import com.biglexj.elytesia.midi.getPlatformMidiDeviceManager
 import com.biglexj.elytesia.model.Song

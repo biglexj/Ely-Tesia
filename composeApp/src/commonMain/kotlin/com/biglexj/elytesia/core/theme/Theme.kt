@@ -104,15 +104,23 @@ private val ElyTypography = Typography(
 fun ElyTesiaTheme(
     theme: ElyThemeDefinition = ThemeDefaults.Aurora,
     platformColorScheme: ColorScheme? = null,
+    useDynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
+    val effectiveColorScheme = platformColorScheme ?: theme.toColorScheme()
+    val resolvedMusicTheme = if (useDynamicColor || platformColorScheme != null) {
+        DynamicThemeEngine.deriveMusicTheme(effectiveColorScheme)
+    } else {
+        theme.music.resolve()
+    }
+
     CompositionLocalProvider(
         LocalElyThemeDefinition provides theme,
-        LocalElyMusicTheme provides theme.music.resolve(),
+        LocalElyMusicTheme provides resolvedMusicTheme,
         LocalElyThemeEffects provides theme.effects
     ) {
         MaterialTheme(
-            colorScheme = platformColorScheme ?: theme.toColorScheme(),
+            colorScheme = effectiveColorScheme,
             typography = ElyTypography,
             shapes = ElyShapes,
             content = content

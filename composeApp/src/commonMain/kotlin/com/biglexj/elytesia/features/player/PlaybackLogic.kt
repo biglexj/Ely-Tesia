@@ -1,4 +1,5 @@
-package com.biglexj.elytesia
+package com.biglexj.elytesia.features.player
+
 
 import com.biglexj.elytesia.model.NoteEvent
 import com.biglexj.elytesia.model.Song

@@ -361,6 +361,14 @@ Estado: **Idea**
 - Zoom multitáctil del teclado virtual en pasos de octava, centrado y limitado por el rango mapeado.
 - Sincronización del rango visible entre teclado y piano roll durante el gesto de pellizco.
 
+### Versión 1.0.8
+
+- Optimización móvil táctil para orientación horizontal (landscape) con barra compacta en 1 sola fila y reducción de teclado a 95.dp.
+- Persistencia total de canción cargada y estados de reproducción entre rotaciones de pantalla (`rememberSaveable`).
+- Rediseño de controles de BPM y Transposición con botones uniformes y diálogos modales emergentes ergonómicos (`BpmAdjusterDialog` y `TransposeAdjusterDialog`).
+- Iconos adaptativos nativos Android de 2 capas (`mipmap-anydpi-v26/ic_launcher.xml` e `ic_launcher_round.xml`) con fondo sólido `#0F172A` y sin discos blancos.
+- Modo por defecto de nombres de notas en "Sin nombres" (`NoteLabelMode.NONE`).
+
 ---
 
 ## Criterios para priorizar

@@ -116,12 +116,20 @@ fun Color.toThemeHex(includeAlpha: Boolean = false): String {
 }
 
 object HandColorResolver {
+    fun isBlackKey(pitch: Int): Boolean = when ((pitch % 12 + 12) % 12) {
+        1, 3, 6, 8, 10 -> true
+        else -> false
+    }
+
     fun isLeftHand(pitch: Int, track: Int?): Boolean = when (track) {
         1 -> true
         0 -> false
         else -> pitch < 60
     }
 
-    fun color(theme: ResolvedMusicTheme, pitch: Int, track: Int?): Color =
-        if (isLeftHand(pitch, track)) theme.leftHand else theme.rightHand
+    fun color(theme: ResolvedMusicTheme, pitch: Int, track: Int?): Color = when {
+        isBlackKey(pitch) -> theme.blackKeyPressed
+        isLeftHand(pitch, track) -> theme.leftHand
+        else -> theme.rightHand
+    }
 }

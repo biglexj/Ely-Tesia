@@ -1,4 +1,5 @@
-package com.biglexj.elytesia
+package com.biglexj.elytesia.features.theme
+
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -39,7 +40,12 @@ internal fun ThemeManagerPanel(
 ) {
     val expressiveMotion = LocalElyThemeEffects.current.expressiveMotion
     val dynamicColorAvailable = isPlatformDynamicColorAvailable()
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
         if (dynamicColorAvailable) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -48,12 +54,13 @@ internal fun ThemeManagerPanel(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        "Color dinámico Android",
+                        "Color dinámico de Interfaz",
                         style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        "Usa el wallpaper para la interfaz",
+                        "Aplica paletas tonales dinámicas (Semilla / Sistema)",
                         fontSize = 10.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

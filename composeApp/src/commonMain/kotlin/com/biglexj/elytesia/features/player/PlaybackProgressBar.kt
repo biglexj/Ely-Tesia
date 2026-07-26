@@ -1,4 +1,5 @@
-package com.biglexj.elytesia
+package com.biglexj.elytesia.features.player
+
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
