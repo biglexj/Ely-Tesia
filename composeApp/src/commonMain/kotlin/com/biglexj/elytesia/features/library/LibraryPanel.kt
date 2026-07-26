@@ -37,12 +37,19 @@ fun LibraryPanel(
     var searchQuery by remember { mutableStateOf("") }
     var selectedDifficulty by remember { mutableStateOf<Difficulty?>(null) }
 
-    val filteredSongs = remember(songsList, searchQuery, selectedDifficulty) {
-        songsList.filter { song ->
+    val demoSongs = remember(songsList) { songsList.filter { it.difficulty != null } }
+    val importedSongs = remember(songsList) { songsList.filter { it.difficulty == null } }
+
+    val filteredDemo = remember(demoSongs, searchQuery, selectedDifficulty) {
+        demoSongs.filter { song ->
             val matchesQuery = song.name.contains(searchQuery, ignoreCase = true)
             val matchesDiff = selectedDifficulty == null || song.difficulty == selectedDifficulty
             matchesQuery && matchesDiff
         }
+    }
+    val filteredImported = remember(importedSongs, searchQuery) {
+        if (selectedDifficulty != null) emptyList()
+        else importedSongs.filter { it.name.contains(searchQuery, ignoreCase = true) }
     }
 
     Column(
@@ -147,12 +154,30 @@ fun LibraryPanel(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.weight(1f)
         ) {
-            items(filteredSongs, key = { it.name }) { song ->
+            items(filteredDemo, key = { "demo_${it.name}" }) { song ->
                 SongCardItem(
                     song = song,
                     isSelected = selectedSong?.name == song.name,
                     onClick = { onSelectSong(song) }
                 )
+            }
+            if (filteredImported.isNotEmpty()) {
+                item {
+                    Text(
+                        text = "📂 Importadas",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp, bottom = 2.dp)
+                    )
+                }
+                items(filteredImported, key = { "import_${it.name}" }) { song ->
+                    SongCardItem(
+                        song = song,
+                        isSelected = selectedSong?.name == song.name,
+                        onClick = { onSelectSong(song) }
+                    )
+                }
             }
         }
     }

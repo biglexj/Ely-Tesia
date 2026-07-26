@@ -73,6 +73,9 @@ internal fun ElyTesiaAppContent(
 
     var activeSidebar by remember { mutableStateOf<SidebarMode?>(SidebarMode.BIBLIOTECA) }
     val demoSongs = remember { DemoSongs.all }
+    val customSongs = remember { mutableStateListOf<Song>() }
+    val allSongs = remember(customSongs.size) { demoSongs + customSongs }
+
     var loadedSongName by rememberSaveable { mutableStateOf<String?>(demoSongs.firstOrNull()?.name) }
     var loadedSong by remember { mutableStateOf<Song?>(demoSongs.firstOrNull()) }
     var currentTimeMs by remember { mutableStateOf(0L) }
@@ -82,6 +85,9 @@ internal fun ElyTesiaAppContent(
         {
             val song = onLoadMidiFile()
             if (song != null) {
+                if (customSongs.none { it.name == song.name }) {
+                    customSongs.add(song)
+                }
                 loadedSong = song
                 loadedSongName = song.name
                 currentTimeMs = 0L
@@ -90,6 +96,20 @@ internal fun ElyTesiaAppContent(
             }
         }
     } else null
+
+    LaunchedEffect(importedSong) {
+        val s = importedSong
+        if (s != null) {
+            if (customSongs.none { it.name == s.name }) {
+                customSongs.add(s)
+            }
+            loadedSong = s
+            loadedSongName = s.name
+            currentTimeMs = 0L
+            isPlaying = false
+            onImportedSongConsumed?.invoke()
+        }
+    }
     var waitMode by rememberSaveable { mutableStateOf(false) }
     var loopEnabled by rememberSaveable { mutableStateOf(false) }
     var speedMultiplier by rememberSaveable { mutableStateOf(1.0f) }
@@ -285,7 +305,7 @@ internal fun ElyTesiaAppContent(
                         ) {
                             SidebarContentPanel(
                                 activeSidebar = activeSidebar,
-                                demoSongs = demoSongs,
+                                demoSongs = allSongs,
                                 loadedSong = loadedSong,
                                 selectedInstrument = selectedInstrument,
                                 availableDevices = availableDevices,
@@ -478,7 +498,7 @@ internal fun ElyTesiaAppContent(
                             Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
                                 SidebarContentPanel(
                                     activeSidebar = activeSidebar,
-                                    demoSongs = demoSongs,
+                                    demoSongs = allSongs,
                                     loadedSong = loadedSong,
                                     selectedInstrument = selectedInstrument,
                                     availableDevices = availableDevices,
