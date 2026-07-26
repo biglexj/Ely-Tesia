@@ -24,6 +24,27 @@ Estado: **Planificado**
 - Pruebas adicionales en distintos dispositivos Android reales.
 - Ajustes de latencia y tamaño de buffer por fabricante.
 
+### Clasificación Automática de Dificultad para Canciones Importadas
+
+Estado: **En evaluación**
+
+Al importar un archivo MIDI el usuario no recibe ninguna etiqueta de dificultad (la canción aparece en la sección "📂 Importadas" sin clasificar). Se propone un motor `DifficultyAnalyzer.kt` que calcule automáticamente la dificultad basándose en múltiples métricas extraídas del modelo `Song`:
+
+**Métricas propuestas:**
+
+| Factor | Criterio sugerido | Peso |
+|---|---|---|
+| **BPM** | < 80 → Fácil · 80–120 → Intermedio · > 120 → Avanzado | Alto |
+| **Densidad de notas** | Notas por segundo promedio | Alto |
+| **Polifonía simultánea** | Máximo de notas sonando al mismo tiempo (acordes) | Medio |
+| **Rango tonal** | Distancia en semitonos entre la nota más grave y la más aguda | Medio |
+| **Varianza rítmica** | Presencia de figuras cortas (semicorcheas, fusas) vs. redondas | Bajo |
+| **Duración total** | Canciones largas (> 3 min) suman dificultad | Bajo |
+
+**Resultado final:** suma ponderada → `FACIL` / `INTERMEDIO` / `AVANZADO`.
+
+**Pendiente de definir:** los umbrales exactos por métrica (requieren calibración con el catálogo demo existente como referencia dorada).
+
 ### Práctica por secciones
 
 Estado: **Planificado**
