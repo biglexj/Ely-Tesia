@@ -11,7 +11,7 @@ import java.net.URL
  * La paridad de funcionalidades entre plataformas es un requisito crítico del proyecto.
  */
 actual object UpdateChecker {
-    actual val currentVersion: String = "1.0.8"
+    actual val currentVersion: String = "1.0.6"
 
     private const val GITHUB_RELEASES_API =
         "https://api.github.com/repos/biglexj/Ely-Tesia/releases/latest"

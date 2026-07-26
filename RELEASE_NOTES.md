@@ -1,5 +1,5 @@
 # 🚀 Ely-Tesia - Historial de Versiones
-📌 **Versión actual: `1.0.8` · Versión mínima requerida: `1.0.0`**
+📌 **Versión actual: `1.0.6` · Versión mínima requerida: `1.0.0`**
 
 > [!IMPORTANT]
 > **Regla del .9 para Versionado:**
@@ -7,31 +7,15 @@
 > - De igual manera, al alcanzar el límite de la versión menor `1.9.9` (o ante hitos de arquitectura significativos posteriores a `1.9.x`), se debe saltar obligatoriamente al siguiente número mayor completo, pasando a **`2.0.0`**. No se permiten números como `1.9.10` o `1.10.x`.
 > - **Nombres de Dulces para Versiones Mayores:** Cada versión mayor (ej. `1.0.0`, `2.0.0`) debe nombrarse con un nombre de dulce o postre al estilo de las versiones clásicas de Android en orden alfabético (ej. `v1.0.0 (Apple Pie Update)`, `v2.0.0 (Banana Bread Update)`). Este nombre debe quedar reflejado de manera coordinada en el título de `README.md`, en `RELEASE_NOTES.md` al documentar la release, y en los archivos de configuración del proyecto.
 
-### 🚀 v1.0.8 — **"Experiencia Móvil Adaptativa, Transposición Musical & Iconos Adaptativos Nativos" (patch)** (25/07/2026)
+### 🚀 v1.0.6 — **"Experiencia Móvil Adaptativa, Transposición Musical & Iconos Nativos" (patch)** (25/07/2026)
 
-Esta actualización optimiza la experiencia móvil táctil en teléfonos tanto en orientación vertical como horizontal (landscape), introduciendo controles numéricos ergonómicos, transposición de tono y la estandarización nativa de iconos adaptativos.
+Esta actualización optimiza la experiencia móvil táctil en teléfonos tanto en orientación vertical como horizontal (landscape), introduciendo controles numéricos ergonómicos, transposición de tono, estandarización nativa de iconos adaptativos y la refactorización modular de la arquitectura del proyecto.
 
 Se implementó la persistencia del estado de reproducción y canción cargada (`rememberSaveable`), garantizando que la canción activa no se reinicie al girar el dispositivo. La barra de controles de reproducción se optimizó en modo horizontal ocupando una sola fila compacta y reduciendo la altura del teclado virtual a 95.dp para maximizar la visibilidad del piano roll en más del 60% de la pantalla. Los controles de Tempo (BPM) y Transposición (semitonos) se rediseñaron mediante botones uniformes que despliegan diálogos modales ergonómicos en el centro de la pantalla con botones amplios de ajuste fácil (`+`/`-`), selectores rápidos de porcentaje (`50%`, `75%`, `100%`, `125%`, `150%`) y opción de restablecimiento de tono.
 
-En la plataforma Android se implementó el estándar nativo de iconos adaptativos de 2 capas (`mipmap-anydpi-v26/ic_launcher.xml` e `ic_launcher_round.xml`) utilizando un fondo sólido `#0F172A` y un primer plano PNG con transparencia de canal alfa completa, eliminando bordes o discos blancos al adaptarse a cualquier launcher del sistema. Asimismo, se fijó el modo inicial de etiquetas de notas en "Sin nombres" y se garantizó la persistencia de las preferencias de notas y reproducción entre rotaciones.
+En la plataforma Android se implementó el estándar nativo de iconos adaptativos de 2 capas (`mipmap-anydpi-v26/ic_launcher.xml` e `ic_launcher_round.xml`) utilizando un fondo sólido `#0F172A` y un primer plano PNG con transparencia de canal alfa completa, eliminando bordes o discos blancos al adaptarse a cualquier launcher del sistema. Asimismo, se integró el motor de color dinámico Material 3 Expressive, se estandarizó la arquitectura modular a `features/` y `shared/components/` alineada a `folder_structure.md`, y se aseguró la visibilidad permanente del botón para importar archivos MIDI.
 
 ---
-
-### 🚀 v1.0.7 — **"Material 3 Expressive & Motor de Color Dinámico" (patch)** (25/07/2026)
-
-Esta actualización integra el sistema de diseño **Material 3 Expressive** y soluciona la reactividad de los colores dinámicos en el teclado de piano y elementos de navegación tanto en Android como en Desktop JVM.
-
-Se implementó el motor `DynamicThemeEngine.kt` para calcular armónicamente los tokens de color desde cualquier `ColorScheme` de Material 3. Las teclas de piano en reposo mantienen la apariencia clásica tradicional (blancas en `#F8FAFC` y negras en `#0F172A`), mientras que al presionar o reproducir notas se aplican los colores de mano y tema activo. Para Desktop JVM se desarrolló un generador por semilla permitiendo que ambas plataformas cuenten con personalización tonal dinámica.
-
-Se fragmentó el teclado virtual desacoplando el renderizado del canvas en `PianoKeyDrawing.kt`, la detección táctil en `PianoTouchHandler.kt` y manteniendo `PianoKeyboard.kt` como un composable ultra ligero (< 130 líneas). La navegación lateral se dividió en 4 pestañas independientes (*Biblioteca, Instrumentos, Configuración, Temas Visuales*) equipadas con animaciones de muelle (`spring()`), roles `primaryContainer`/`onPrimaryContainer` y un pie de página con insignias "Acerca de" y enlaces a Donaciones Directas ([biglexj.com/donaciones](https://www.biglexj.com/donaciones)), Buy Me a Coffee y GitHub.
-
-Se añadió un botón persistente **`☰ Menú`** en la barra superior para abrir/cerrar la navegación lateral libremente en cualquier momento, se aumentó la legibilidad y el contraste oscuro (`#0F172A`) de los nombres de las notas en las teclas blancas, y se expandió el catálogo de canciones demo en `DemoSongs.kt` a 12 temas clasificados por nivel de dificultad.
-
----
-
-### 🚀 v1.0.6 — **"Estandarización de Arquitectura y Modularización Visual" (patch)** (24/07/2026)
-
-Esta actualización estandariza la arquitectura del proyecto alineándola al patrón de diseño oficial `folder_structure.md` y las reglas del sistema. Se reestructuraron los paquetes a `features/` y se creó `shared/components/` con átomos UI reutilizables (`ElyBadge`, `ElyButton`, `ElyCard`).
 
 Se completó una refactorización de `ElyTesiaAppContent.kt` reduciendo su tamaño de 2,194 líneas a un coordinador ultra conciso de < 230 líneas. Toda la lógica visual y de interacción se extrajo en sub-composables especializados (`SidebarNavigation`, `TopHeaderControlBar`, `PracticeStatsCard`, `MidiMappingDialog`, `ExportDialogs`, `LibraryPanel`, `InstrumentConfigPanel`, `PlaybackControlBar`), garantizando un límite estricto de < 300 líneas por archivo y verificando que el 100% de la suite de pruebas unitarias y de compilación se ejecuten sin errores.
 

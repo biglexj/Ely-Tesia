@@ -1,4 +1,4 @@
-﻿param(
+param(
     # Versión a publicar. Si se omite, se lee la versión actual de build.gradle.kts y se incrementa el patch.
     [string]$Version,
     # Mensaje del release en GitHub. Si se omite, se genera uno por defecto.
@@ -158,8 +158,9 @@ if (-not $SkipAndroid) {
     & $apkSigner verify --verbose --print-certs $apkSrc
     if ($LASTEXITCODE -ne 0) { throw "El APK release no tiene una firma válida." }
 
-    $badging = (& $aapt dump badging $apkSrc | Select-Object -First 1)
+    $badgingRaw = & $aapt dump badging $apkSrc
     if ($LASTEXITCODE -ne 0) { throw "No se pudo inspeccionar la identidad del APK." }
+    $badging = $badgingRaw | Select-Object -First 1
     if ($badging -notmatch "name='com\.biglexj\.elytesia'") {
         throw "El applicationId del APK no corresponde a Ely-Tesia: $badging"
     }

@@ -77,6 +77,19 @@ internal fun ElyTesiaAppContent(
     var loadedSong by remember { mutableStateOf<Song?>(demoSongs.firstOrNull()) }
     var currentTimeMs by remember { mutableStateOf(0L) }
     var isPlaying by remember { mutableStateOf(false) }
+
+    val effectiveRequestMidi = onRequestMidiFile ?: if (onLoadMidiFile != null) {
+        {
+            val song = onLoadMidiFile()
+            if (song != null) {
+                loadedSong = song
+                loadedSongName = song.name
+                currentTimeMs = 0L
+                isPlaying = false
+                activeSidebar = null
+            }
+        }
+    } else null
     var waitMode by rememberSaveable { mutableStateOf(false) }
     var loopEnabled by rememberSaveable { mutableStateOf(false) }
     var speedMultiplier by rememberSaveable { mutableStateOf(1.0f) }
@@ -281,7 +294,7 @@ internal fun ElyTesiaAppContent(
                                 installedThemes = installedThemes,
                                 selectedThemeId = selectedThemeId,
                                 useDynamicColor = useDynamicColor,
-                                onRequestMidiFile = onRequestMidiFile,
+                                onRequestMidiFile = effectiveRequestMidi,
                                 onRequestThemeFile = onRequestThemeFile,
                                 onRequestExportTheme = onRequestExportTheme,
                                 onSelectSong = { song ->
@@ -474,7 +487,7 @@ internal fun ElyTesiaAppContent(
                                     installedThemes = installedThemes,
                                     selectedThemeId = selectedThemeId,
                                     useDynamicColor = useDynamicColor,
-                                    onRequestMidiFile = onRequestMidiFile,
+                                    onRequestMidiFile = effectiveRequestMidi,
                                     onRequestThemeFile = onRequestThemeFile,
                                     onRequestExportTheme = onRequestExportTheme,
                                     onSelectSong = { song ->
