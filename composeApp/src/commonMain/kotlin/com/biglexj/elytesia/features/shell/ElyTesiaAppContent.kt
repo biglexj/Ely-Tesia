@@ -76,7 +76,14 @@ internal fun ElyTesiaAppContent(
 
     var activeSidebar by remember { mutableStateOf<SidebarMode?>(SidebarMode.BIBLIOTECA) }
     val demoSongs = remember { DemoSongs.all }
-    val customSongs = remember { mutableStateListOf<Song>() }
+    val customSongs = remember {
+        mutableStateListOf<Song>().apply {
+            // Restaurar canciones importadas guardadas en sesiones anteriores
+            restoredState?.songs
+                ?.filter { saved -> demoSongs.none { demo -> demo.name == saved.name } }
+                ?.let { addAll(it) }
+        }
+    }
     val allSongs = remember(customSongs.size) { demoSongs + customSongs }
 
     var loadedSongName by rememberSaveable { mutableStateOf<String?>(demoSongs.firstOrNull()?.name) }
@@ -160,6 +167,39 @@ internal fun ElyTesiaAppContent(
     val activeKeys = remember { mutableStateMapOf<Int, Int>() }
     val userActiveKeys = remember { mutableStateListOf<Int>() }
     val wrongUserKeys = remember { mutableStateListOf<Int>() }
+
+    // Persistencia automática de estado: guarda en disco cuando cambia cualquier campo relevante
+    LaunchedEffect(localStorage) {
+        snapshotFlow {
+            // Captura todos los estados observables que deben persistirse
+            listOf(
+                customSongs.size,
+                installedThemes.size,
+                selectedThemeId.hashCode(),
+                useDynamicColor.hashCode(),
+                internalSoundEnabled.hashCode(),
+                minPitch,
+                maxPitch
+            )
+        }.collect {
+            val state = com.biglexj.elytesia.storage.SavedAppState(
+                minPitch = minPitch,
+                maxPitch = maxPitch,
+                internalSoundEnabled = internalSoundEnabled,
+                noteLabelMode = noteLabelMode.name,
+                selectedAudioDevice = selectedAudioOutput,
+                selectedSongName = loadedSong?.name,
+                selectedInstrument = selectedInstrument.name,
+                selectedThemeId = selectedThemeId,
+                useDynamicColor = useDynamicColor,
+                importedThemes = installedThemes
+                    .filter { !it.builtIn }
+                    .mapNotNull { runCatching { ThemeJsonCodec.encode(it) }.getOrNull() },
+                songs = customSongs.toList()
+            )
+            localStorage.write(AppStateCodec.encode(state))
+        }
+    }
 
     // Sincronización automática de canción al rotar o cambiar orientación
     LaunchedEffect(loadedSongName) {
