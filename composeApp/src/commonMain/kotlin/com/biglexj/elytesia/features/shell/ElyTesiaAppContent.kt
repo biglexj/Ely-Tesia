@@ -21,6 +21,7 @@ import com.biglexj.elytesia.features.keyboard.PianoRollCanvas
 import com.biglexj.elytesia.features.library.DemoSongs
 import com.biglexj.elytesia.features.library.LibraryPanel
 import com.biglexj.elytesia.features.player.PlaybackControlBar
+import com.biglexj.elytesia.features.player.HandMode
 import com.biglexj.elytesia.features.player.PlaybackLogic
 import com.biglexj.elytesia.features.theme.ThemeManagerPanel
 import com.biglexj.elytesia.midi.InstrumentType
@@ -137,6 +138,7 @@ internal fun ElyTesiaAppContent(
     }
     var waitMode by rememberSaveable { mutableStateOf(false) }
     var loopEnabled by rememberSaveable { mutableStateOf(false) }
+    var handMode by rememberSaveable { mutableStateOf(HandMode.AMBAS) }
     var loopStartMs by rememberSaveable { mutableStateOf<Long?>(null) }
     var loopEndMs by rememberSaveable { mutableStateOf<Long?>(null) }
     var speedMultiplier by rememberSaveable { mutableStateOf(1.0f) }
@@ -318,8 +320,19 @@ internal fun ElyTesiaAppContent(
                 val currentActiveNotes = PlaybackLogic.activeNotesAt(song, currentTimeMs)
                 val currentPitches = currentActiveNotes.map { it.pitch }.toSet()
 
+                // Filtrar por mano activa: solo las notas de la mano seleccionada son "activas"
+                val practiceNotes = when (handMode) {
+                    HandMode.MANO_IZQUIERDA -> currentActiveNotes.filter {
+                        com.biglexj.elytesia.theme.HandColorResolver.isLeftHand(it.pitch, it.track)
+                    }
+                    HandMode.MANO_DERECHA -> currentActiveNotes.filter {
+                        !com.biglexj.elytesia.theme.HandColorResolver.isLeftHand(it.pitch, it.track)
+                    }
+                    HandMode.AMBAS -> currentActiveNotes
+                }
+
                 activeKeys.clear()
-                currentActiveNotes.forEach { note ->
+                practiceNotes.forEach { note ->
                     activeKeys[note.pitch] = note.track
                 }
 
@@ -534,6 +547,8 @@ internal fun ElyTesiaAppContent(
                             onWaitModeToggle = { waitMode = !waitMode },
                             loopEnabled = loopEnabled,
                             onLoopToggle = { loopEnabled = !loopEnabled },
+                            handMode = handMode,
+                            onCycleHandMode = { handMode = handMode.next() },
                             noteLabelMode = noteLabelMode,
                             onCycleNoteLabelMode = { noteLabelMode = noteLabelMode.next() },
                             loopStartMs = loopStartMs,

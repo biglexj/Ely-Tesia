@@ -113,44 +113,7 @@ fun LibraryPanel(
             }
         }
 
-        onRequestMidiFile?.let { onLoad ->
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                ElyButton(
-                    text = "Cargar MIDI Local",
-                    onClick = onLoad,
-                    containerColor = AuroraViolet,
-                    contentColor = colors.surface,
-                    modifier = Modifier.weight(1f)
-                )
 
-                var isDownloading by remember { mutableStateOf(false) }
-                var statusText by remember { mutableStateOf("") }
-                val scope = rememberCoroutineScope()
-
-                ElyButton(
-                    text = if (isDownloading) "Descargando..." else "⚡ Autodescarga",
-                    onClick = {
-                        if (!isDownloading) {
-                            isDownloading = true
-                            scope.launch {
-                                val userHome = System.getProperty("user.home") ?: "."
-                                val targetDir = java.io.File(userHome, ".elytesia/midi_downloads")
-                                AutoDownloader.syncOnlineDemos(targetDir) { status ->
-                                    statusText = status
-                                }
-                                isDownloading = false
-                            }
-                        }
-                    },
-                    containerColor = ElyGreen,
-                    contentColor = colors.surface,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
 
         // Song catalog list
         LazyColumn(

@@ -39,6 +39,8 @@ fun PlaybackControlBar(
     onWaitModeToggle: () -> Unit,
     loopEnabled: Boolean,
     onLoopToggle: () -> Unit,
+    handMode: HandMode = HandMode.AMBAS,
+    onCycleHandMode: () -> Unit = {},
     noteLabelMode: NoteLabelMode,
     onCycleNoteLabelMode: () -> Unit,
     loopStartMs: Long? = null,
@@ -124,6 +126,16 @@ fun PlaybackControlBar(
                         onClick = onLoopToggle,
                         containerColor = if (loopEnabled) colors.primary else inactiveContainer,
                         contentColor = if (loopEnabled) colors.onPrimary else inactiveContent,
+                        height = 30.dp,
+                        fontSize = 10.sp,
+                        contentPadding = PaddingValues(horizontal = 6.dp)
+                    )
+
+                    ElyButton(
+                        text = "${handMode.icon} ${handMode.label}",
+                        onClick = onCycleHandMode,
+                        containerColor = if (handMode != HandMode.AMBAS) colors.tertiary else inactiveContainer,
+                        contentColor = if (handMode != HandMode.AMBAS) colors.onTertiary else inactiveContent,
                         height = 30.dp,
                         fontSize = 10.sp,
                         contentPadding = PaddingValues(horizontal = 6.dp)
@@ -228,6 +240,15 @@ fun PlaybackControlBar(
                     onClick = onLoopToggle,
                     containerColor = if (loopEnabled) colors.primary else inactiveContainer,
                     contentColor = if (loopEnabled) colors.onPrimary else inactiveContent,
+                    modifier = Modifier.weight(1f)
+                )
+
+                // Selector de mano (Ambas / Izquierda / Derecha)
+                ElyButton(
+                    text = "${handMode.icon} ${handMode.label}",
+                    onClick = onCycleHandMode,
+                    containerColor = if (handMode != HandMode.AMBAS) colors.tertiary else inactiveContainer,
+                    contentColor = if (handMode != HandMode.AMBAS) colors.onTertiary else inactiveContent,
                     modifier = Modifier.weight(1f)
                 )
             }
