@@ -299,11 +299,11 @@ fun PlaybackControlBar(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 val isAbActive = loopStartMs != null || loopEndMs != null
-                val startStr = if (loopStartMs != null) formatMs(loopStartMs!!) else "0:00"
+                val startStr = if (loopStartMs != null) formatMs(loopStartMs!!) else "Inicio"
                 val endStr = if (loopEndMs != null) formatMs(loopEndMs!!) else "Fin"
 
                 ElyButton(
-                    text = if (loopStartMs != null) "A: $startStr" else "📍 Marcar A",
+                    text = if (loopStartMs != null) "📍 A: $startStr" else "📍 A: Inicio",
                     onClick = onSetLoopStart,
                     containerColor = if (loopStartMs != null) colors.primary else inactiveContainer,
                     contentColor = if (loopStartMs != null) colors.onPrimary else inactiveContent,
@@ -311,7 +311,7 @@ fun PlaybackControlBar(
                 )
 
                 ElyButton(
-                    text = if (loopEndMs != null) "B: $endStr" else "📌 Marcar B",
+                    text = if (loopEndMs != null) "📌 B: $endStr" else "📌 B: Fin",
                     onClick = onSetLoopEnd,
                     containerColor = if (loopEndMs != null) colors.primary else inactiveContainer,
                     contentColor = if (loopEndMs != null) colors.onPrimary else inactiveContent,
