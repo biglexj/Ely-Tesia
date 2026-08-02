@@ -19,27 +19,28 @@ object DynamicThemeEngine {
      * - Las notas tocadas por la Mano Izquierda y Mano Derecha sigan la paleta `secondary` y `primary`.
      */
     fun deriveMusicTheme(colorScheme: ColorScheme): ResolvedMusicTheme {
-        val activeColor = colorScheme.primary
+        val rightColor = colorScheme.primary
+        val leftColor  = colorScheme.secondary  // variante más oscura/fría para la mano izquierda
         return ResolvedMusicTheme(
-            leftHand = activeColor,
-            rightHand = activeColor,
+            leftHand  = leftColor,
+            rightHand = rightColor,
             neutralTrack = colorScheme.tertiary,
-            
+
             // Teclas Blancas y Negras tradicionales en reposo
             whiteKey = Color(0xFFF8FAFC),
-            whiteKeyPressed = activeColor,
-            
+            whiteKeyPressed = rightColor,
+
             blackKey = Color(0xFF0F172A),
-            blackKeyPressed = activeColor,
-            
+            blackKeyPressed = rightColor,
+
             // Retroalimentación de notas
-            correctNote = activeColor,
+            correctNote = rightColor,
             wrongNote = colorScheme.error,
             waitingNote = colorScheme.tertiaryContainer,
-            
-            // Partículas reactivas
-            particleLeft = activeColor.copy(alpha = 0.8f),
-            particleRight = activeColor.copy(alpha = 0.8f)
+
+            // Partículas reactivas con color de su mano correspondiente
+            particleLeft  = leftColor.copy(alpha = 0.8f),
+            particleRight = rightColor.copy(alpha = 0.8f)
         )
     }
 

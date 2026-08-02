@@ -19,6 +19,23 @@ actual object UpdateChecker {
         "https://github.com/biglexj/Ely-Tesia/releases/latest"
 
     actual suspend fun checkForUpdates(): UpdateResult = withContext(Dispatchers.IO) {
+        val TEST_UPDATE_MODE = false
+        if (TEST_UPDATE_MODE) {
+            val fakeMarkdown = """
+                ## ¿Qué hay de nuevo en v2.0.0? (Android Simulación)
+                - **Nueva interfaz** de actualización con modal central adaptativo
+                - Corrección de maquetación en orientación horizontal (landscape)
+                - Simulación de descarga e instalación interactiva (0-100%)
+                - [Ver changelog completo](https://github.com/biglexj/Ely-Tesia/releases)
+            """.trimIndent()
+            return@withContext UpdateResult(
+                latestVersion = "2.0.0",
+                releaseUrl = "https://github.com/biglexj/Ely-Tesia/releases/latest",
+                releaseNotes = sanitizeReleaseNotes(fakeMarkdown),
+                isUpdateAvailable = true
+            )
+        }
+
         runCatching {
             val url = URL(GITHUB_RELEASES_API)
             val connection = url.openConnection() as HttpURLConnection

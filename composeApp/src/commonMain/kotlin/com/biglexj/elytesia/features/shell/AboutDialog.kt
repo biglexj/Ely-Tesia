@@ -11,9 +11,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.biglexj.elytesia.shared.components.ElyBadge
 import com.biglexj.elytesia.shared.components.ElyButton
 import com.biglexj.elytesia.update.UpdateChecker
@@ -22,11 +25,13 @@ import kotlinx.coroutines.launch
 
 /**
  * Diálogo de Información "Acerca de la Aplicación" y Apoyo al Autor (Material 3 Expressive).
- * Incluye verificador de actualizaciones multiplataforma (Windows & Android) vía GitHub Releases.
+ * Configurado al 80% de ancho de pantalla conforme a los estándares canónicos del ecosistema biglexj.
  */
 @Composable
 fun AboutDialog(
-    onDismissRequest: () -> Unit
+    onDismissRequest: () -> Unit,
+    onShowToast: ((String) -> Unit)? = null,
+    onShowUpdateModal: ((UpdateResult) -> Unit)? = null
 ) {
     val colors = MaterialTheme.colorScheme
     val uriHandler = LocalUriHandler.current
@@ -34,18 +39,44 @@ fun AboutDialog(
 
     var updateState by remember { mutableStateOf<UpdateCheckState>(UpdateCheckState.Idle) }
 
-    Dialog(onDismissRequest = onDismissRequest) {
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = colors.surface,
-            tonalElevation = 6.dp,
-            modifier = Modifier.width(380.dp).padding(12.dp)
+    Dialog(
+        onDismissRequest = onDismissRequest,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            dismissOnBackPress = true,
+            dismissOnClickOutside = true
+        )
+    ) {
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+            val isLandscapeMobile = maxHeight < 500.dp
+            val isDesktop = maxWidth >= 700.dp && !isLandscapeMobile
+            val widthFraction = when {
+                isDesktop -> 0.40f
+                isLandscapeMobile -> 0.65f
+                else -> 0.85f
+            }
+            val maxCustomWidth = if (isDesktop) 420.dp else 480.dp
+
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = colors.surface,
+                tonalElevation = 6.dp,
+                modifier = Modifier
+                    .fillMaxWidth(widthFraction)
+                    .widthIn(max = maxCustomWidth)
+                    .heightIn(max = maxHeight - 24.dp)
+                    .padding(6.dp)
             ) {
+                Column(
+                    modifier = Modifier
+                        .verticalScroll(rememberScrollState())
+                        .padding(if (isLandscapeMobile) 14.dp else 20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(if (isLandscapeMobile) 10.dp else 14.dp)
+                ) {
                 // Header Badge
                 ElyBadge(
                     text = "ACERCA DE LA APLICACIÓN",
@@ -93,6 +124,18 @@ fun AboutDialog(
                         scope.launch {
                             val result = UpdateChecker.checkForUpdates()
                             updateState = UpdateCheckState.Done(result)
+                            if (result.error == null) {
+                                if (result.isUpdateAvailable) {
+                                    // Hay actualización: cerrar el diálogo y mostrar el modal de descarga
+                                    if (onShowUpdateModal != null) {
+                                        onDismissRequest()
+                                        onShowUpdateModal(result)
+                                    }
+                                }
+                                // Sin actualización: NO cerrar. El mensaje ✅ se muestra dentro del diálogo.
+                            } else {
+                                // No mostrar toast externo, el error ya se muestra dentro de UpdateCheckerSection
+                            }
                         }
                     },
                     onOpenRelease = { url ->
@@ -100,11 +143,22 @@ fun AboutDialog(
                     }
                 )
 
-                // Donation Buttons
+                // Feedback & Support Buttons
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    ElyButton(
+                        text = "💬 Enviar Feedback / Reportar Error",
+                        onClick = { runCatching { uriHandler.openUri("https://github.com/biglexj/Ely-Tesia/issues") } },
+                        containerColor = colors.tertiaryContainer,
+                        contentColor = colors.onTertiaryContainer,
+                        fontSize = 11.sp,
+                        height = 38.dp,
+                        cornerRadius = 19.dp,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
                     ElyButton(
                         text = "💳 Donación Directa (Yape / Plin / Web)",
                         onClick = { runCatching { uriHandler.openUri("https://www.biglexj.com/donaciones") } },
@@ -153,6 +207,7 @@ fun AboutDialog(
             }
         }
     }
+}
 }
 
 sealed class UpdateCheckState {
@@ -268,4 +323,3 @@ private fun UpdateCheckerSection(
         }
     }
 }
-

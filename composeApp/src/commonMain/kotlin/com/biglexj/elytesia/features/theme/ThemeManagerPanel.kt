@@ -105,6 +105,7 @@ internal fun ThemeManagerPanel(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
                         .border(
                             1.dp,
                             borderColor,

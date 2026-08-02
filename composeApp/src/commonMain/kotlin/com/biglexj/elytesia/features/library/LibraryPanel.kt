@@ -37,8 +37,8 @@ fun LibraryPanel(
     var searchQuery by remember { mutableStateOf("") }
     var selectedDifficulty by remember { mutableStateOf<Difficulty?>(null) }
 
-    val demoSongs = remember(songsList) { songsList.filter { it.difficulty != null } }
-    val importedSongs = remember(songsList) { songsList.filter { it.difficulty == null } }
+    val demoSongs = remember(songsList) { songsList.filter { it.isDemo } }
+    val importedSongs = remember(songsList) { songsList.filter { !it.isDemo } }
 
     val filteredDemo = remember(demoSongs, searchQuery, selectedDifficulty) {
         demoSongs.filter { song ->
@@ -47,9 +47,12 @@ fun LibraryPanel(
             matchesQuery && matchesDiff
         }
     }
-    val filteredImported = remember(importedSongs, searchQuery) {
-        if (selectedDifficulty != null) emptyList()
-        else importedSongs.filter { it.name.contains(searchQuery, ignoreCase = true) }
+    val filteredImported = remember(importedSongs, searchQuery, selectedDifficulty) {
+        importedSongs.filter { song ->
+            val matchesQuery = song.name.contains(searchQuery, ignoreCase = true)
+            val matchesDiff = selectedDifficulty == null || song.difficulty == selectedDifficulty
+            matchesQuery && matchesDiff
+        }
     }
 
     Column(
@@ -241,10 +244,11 @@ private fun SongCardItem(
                 )
             }
 
+            val diffColor = androidx.compose.ui.graphics.Color(song.difficulty.colorHex)
             ElyBadge(
-                text = song.difficulty.name,
-                containerColor = ElyGreen.copy(alpha = 0.2f),
-                contentColor = ElyGreen
+                text = song.difficulty.displayName,
+                containerColor = diffColor.copy(alpha = 0.2f),
+                contentColor = diffColor
             )
         }
     }

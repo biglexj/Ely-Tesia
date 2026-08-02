@@ -41,6 +41,11 @@ fun PlaybackControlBar(
     onLoopToggle: () -> Unit,
     noteLabelMode: NoteLabelMode,
     onCycleNoteLabelMode: () -> Unit,
+    loopStartMs: Long? = null,
+    loopEndMs: Long? = null,
+    onSetLoopStart: () -> Unit = {},
+    onSetLoopEnd: () -> Unit = {},
+    onClearLoopAB: () -> Unit = {},
     isCompactHeight: Boolean = false,
     modifier: Modifier = Modifier
 ) {
@@ -265,6 +270,43 @@ fun PlaybackControlBar(
                     modifier = Modifier.weight(1f)
                 )
             }
+
+            // Row 3: Controles de Práctica por Secciones (Bucle A-B)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val isAbActive = loopStartMs != null || loopEndMs != null
+                val startStr = if (loopStartMs != null) formatMs(loopStartMs!!) else "0:00"
+                val endStr = if (loopEndMs != null) formatMs(loopEndMs!!) else "Fin"
+
+                ElyButton(
+                    text = if (loopStartMs != null) "A: $startStr" else "📍 Marcar A",
+                    onClick = onSetLoopStart,
+                    containerColor = if (loopStartMs != null) colors.primary else inactiveContainer,
+                    contentColor = if (loopStartMs != null) colors.onPrimary else inactiveContent,
+                    modifier = Modifier.weight(1f)
+                )
+
+                ElyButton(
+                    text = if (loopEndMs != null) "B: $endStr" else "📌 Marcar B",
+                    onClick = onSetLoopEnd,
+                    containerColor = if (loopEndMs != null) colors.primary else inactiveContainer,
+                    contentColor = if (loopEndMs != null) colors.onPrimary else inactiveContent,
+                    modifier = Modifier.weight(1f)
+                )
+
+                if (isAbActive) {
+                    ElyButton(
+                        text = "❌ Limpiar",
+                        onClick = onClearLoopAB,
+                        containerColor = colors.errorContainer,
+                        contentColor = colors.onErrorContainer,
+                        modifier = Modifier.weight(0.8f)
+                    )
+                }
+            }
         }
     }
 
@@ -430,4 +472,12 @@ fun PlaybackControlBar(
             }
         )
     }
+}
+
+private fun formatMs(ms: Long): String {
+    val totalSec = (ms / 1000).toInt()
+    val min = totalSec / 60
+    val sec = totalSec % 60
+    val secStr = if (sec < 10) "0$sec" else "$sec"
+    return "$min:$secStr"
 }

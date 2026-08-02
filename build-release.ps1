@@ -173,6 +173,8 @@ if (-not $SkipAndroid) {
 }
 
 # SHA256
+
+# SHA256
 $artifacts = Get-ChildItem $releaseDir -File
 $artifacts | Get-FileHash -Algorithm SHA256 | ForEach-Object {
     "{0}  {1}" -f $_.Hash.ToLowerInvariant(), (Split-Path $_.Path -Leaf)
@@ -194,7 +196,8 @@ Write-Host ""
 Write-Host "[4/7] Commit de los cambios..." -ForegroundColor Yellow
 git add -A
 git commit -m "chore: bump version to $Version"
-if ($LASTEXITCODE -ne 0) { throw "git commit falló" }
+# exit code 1 = "nothing to commit", no es error real
+if ($LASTEXITCODE -gt 1) { throw "git commit falló (exit $LASTEXITCODE)" }
 
 Write-Host ""
 Write-Host "[5/7] Creando tag v$Version..." -ForegroundColor Yellow
@@ -251,5 +254,3 @@ Write-Host "══════════════════════�
 Write-Host ""
 Write-Host "  https://github.com/biglexj/Ely-Tesia/releases/tag/v$Version" -ForegroundColor Cyan
 Write-Host ""
-
-

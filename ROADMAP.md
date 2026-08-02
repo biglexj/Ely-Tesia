@@ -6,7 +6,7 @@ es conservar propuestas, discutirlas y priorizarlas antes de convertirlas en
 cambios de código.
 
 ## Estados
-
+![alt text](image.png)
 - **En desarrollo:** existe trabajo activo y puede cambiar.
 - **Planificado:** aprobado para una versión futura, pero todavía sin comenzar.
 - **En evaluación:** la idea parece útil, aunque falta definir diseño o alcance.
@@ -390,6 +390,13 @@ Estado: **Idea**
 - Rediseño de controles de BPM y Transposición con botones uniformes y diálogos modales emergentes ergonómicos (`BpmAdjusterDialog` y `TransposeAdjusterDialog`).
 - Iconos adaptativos nativos Android de 2 capas (`mipmap-anydpi-v26/ic_launcher.xml` e `ic_launcher_round.xml`) con fondo sólido `#0F172A` y sin discos blancos.
 - Restauración y visibilidad permanente del botón para importar archivos MIDI.
+
+### Versión 1.0.7
+
+- **Motor de Clasificación Automática de Dificultad (`DifficultyAnalyzer.kt`)**: Evaluación multimétrica heurística (BPM, densidad de notas NPS, polifonía simultánea de acordes, rango tonal/span y duración) para canciones importadas.
+- **Práctica por Secciones (Bucle A-B)**: Marcado de puntos de inicio (📍 Marcar A) y fin (📌 Marcar B) en la barra de controles para repetición continua de fragmentos difíciles con reinicio automático de reloj.
+- **Integración del Centro de Feedback & Reportes**: Enlace directo a GitHub Issues en la interfaz ("Acerca de" y panel de Ajustes) conforme al estándar `feedback_center.md`.
+- **Estandarización de Templates del Ecosistema**: Actualización completa de reglas locales (`.agents/rules/base.md`, `agent.md`) alineadas a `D:\Proyectos\biglexj\Scripts\templates`.
 
 ---
 

@@ -107,32 +107,32 @@ class SimpleSoftwareSynth {
     }
 
     init {
-        try {
-            val format = AudioFormat(SAMPLE_RATE, 16, 2, true, false)
-            val info = DataLine.Info(SourceDataLine::class.java, format)
-            val l = AudioSystem.getLine(info) as SourceDataLine
-            l.open(format, 4096)
-            l.start()
-            line = l
+        synthThread = thread(start = true, isDaemon = true, name = "SoftwareSynthThread") {
+            try {
+                val format = AudioFormat(SAMPLE_RATE, 16, 2, true, false)
+                val info = DataLine.Info(SourceDataLine::class.java, format)
+                val l = AudioSystem.getLine(info) as SourceDataLine
+                l.open(format, 4096)
+                l.start()
+                line = l
+            } catch (e: Exception) {
+                println("Error al iniciar sintetizador de software: ${e.message}")
+            }
 
-            synthThread = thread(start = true, isDaemon = true, name = "SoftwareSynthThread") {
-                val buffer = ByteArray(1024)
-                while (running) {
-                    try {
-                        generateSamples(buffer)
-                        val currentLine = line
-                        if (currentLine != null && currentLine.isOpen) {
-                            currentLine.write(buffer, 0, buffer.size)
-                        } else {
-                            Thread.sleep(10)
-                        }
-                    } catch (e: Exception) {
-                        try { Thread.sleep(20) } catch (te: Exception) {}
+            val buffer = ByteArray(1024)
+            while (running) {
+                try {
+                    generateSamples(buffer)
+                    val currentLine = line
+                    if (currentLine != null && currentLine.isOpen) {
+                        currentLine.write(buffer, 0, buffer.size)
+                    } else {
+                        Thread.sleep(10)
                     }
+                } catch (e: Exception) {
+                    try { Thread.sleep(20) } catch (te: Exception) {}
                 }
             }
-        } catch (e: Exception) {
-            println("Error al iniciar sintetizador de software: ${e.message}")
         }
     }
 

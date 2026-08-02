@@ -1,4 +1,4 @@
-﻿plugins {
+plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.multiplatform)
@@ -111,6 +111,10 @@ android {
 compose.desktop {
     application {
         mainClass = "com.biglexj.elytesia.MainKt"
+        jvmArgs += listOf(
+            "-Dskiko.renderApi=SOFTWARE_COMPAT",
+            "-Djava.awt.headless=false"
+        )
         nativeDistributions {
             targetFormats(
                 org.jetbrains.compose.desktop.application.dsl.TargetFormat.Msi,
@@ -141,8 +145,8 @@ val copyMidiDemosTask = tasks.register<Copy>("copyMidiDemos") {
     include("**/*")
 }
 
-tasks.configureEach {
-    if (name != "copyMidiDemos") {
-        dependsOn(copyMidiDemosTask)
-    }
+tasks.matching {
+    it.name.contains("Resource", ignoreCase = true) && it.name != "copyMidiDemos"
+}.configureEach {
+    dependsOn(copyMidiDemosTask)
 }

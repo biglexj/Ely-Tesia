@@ -18,8 +18,8 @@ Antes de iniciar cualquier modificación en el código:
 
 ## 🛠️ 2. Checklist de Refactorización y Estandarización
 
-- `[ ]` **Paso 1**: Auditar la estructura de `composeApp/src/commonMain/kotlin/` y organizar composables por dominios en `features/`.
-- `[ ]` **Paso 2**: Asegurar que los componentes compartidos entre 2 o más pantallas residan en `shared/components/`.
-- `[ ]` **Paso 3**: Verificar el límite de 400 líneas por archivo composable. Dividir en sub-composables si se supera.
-- `[ ]` **Paso 4**: Mover scripts utilitarios fuera de norma a `scratch/` en la raíz.
-- `[ ]` **Paso 5**: Actualizar `ROADMAP.md` y `RELEASE_NOTES.md` tras completar los cambios.
+- `[x]` **Paso 1**: Auditar la estructura de `composeApp/src/commonMain/kotlin/` y organizar composables por dominios en `features/` (`instrument`, `keyboard`, `library`, `player`, `shell`, `theme`).
+- `[x]` **Paso 2**: Asegurar que los componentes compartidos entre 2 o más pantallas residan en `shared/components/` (`ElyBadge`, `ElyButton`, `ElyCard`, `ElyToast`).
+- `[x]` **Paso 3**: Verificar el límite de 400 líneas por archivo composable. Dividir en sub-composables si se supera.
+- `[x]` **Paso 4**: Mover scripts utilitarios fuera de norma a `scratch/` en la raíz.
+- `[x]` **Paso 5**: Actualizar `ROADMAP.md` y `RELEASE_NOTES.md` tras completar los cambios.

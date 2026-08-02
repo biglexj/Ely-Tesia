@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.biglexj.elytesia.update.UpdateResult
 
 enum class SidebarMode { BIBLIOTECA, INSTRUMENTOS, CONFIGURACION, TEMAS }
 
@@ -26,6 +27,8 @@ enum class SidebarMode { BIBLIOTECA, INSTRUMENTOS, CONFIGURACION, TEMAS }
 fun SidebarNavigation(
     selectedMode: SidebarMode?,
     onModeSelected: (SidebarMode) -> Unit,
+    onShowToast: ((String) -> Unit)? = null,
+    onShowUpdateModal: ((UpdateResult) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val colors = MaterialTheme.colorScheme
@@ -48,21 +51,21 @@ fun SidebarNavigation(
             Column {
                 Text(
                     text = "ELY-TESIA",
-                    color = colors.primary,
                     fontSize = 18.sp,
-                    fontWeight = FontWeight.Black
+                    fontWeight = FontWeight.Black,
+                    color = colors.primary
                 )
                 Text(
                     text = "Piano & MIDI Suite",
-                    color = colors.onSurfaceVariant,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium
+                    fontSize = 10.sp,
+                    color = colors.onSurfaceVariant
                 )
             }
         }
 
+        // Navegación Principal
         SidebarNavItem(
-            label = "Biblioteca",
+            label = "Biblioteca MIDI",
             isSelected = selectedMode == SidebarMode.BIBLIOTECA,
             onClick = { onModeSelected(SidebarMode.BIBLIOTECA) }
         )
@@ -90,7 +93,11 @@ fun SidebarNavigation(
         var showAboutDialog by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
 
         if (showAboutDialog) {
-            AboutDialog(onDismissRequest = { showAboutDialog = false })
+            AboutDialog(
+                onDismissRequest = { showAboutDialog = false },
+                onShowToast = onShowToast,
+                onShowUpdateModal = onShowUpdateModal
+            )
         }
 
         // Pie de página de Apoyo y Autor con Badge "Acerca de"

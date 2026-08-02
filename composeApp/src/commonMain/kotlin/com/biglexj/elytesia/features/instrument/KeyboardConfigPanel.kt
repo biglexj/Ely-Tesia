@@ -13,6 +13,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalUriHandler
 import com.biglexj.elytesia.shared.components.ElyButton
 
 /**
@@ -33,6 +34,7 @@ fun KeyboardConfigPanel(
 ) {
     val colors = MaterialTheme.colorScheme
     val scrollState = rememberScrollState()
+    val uriHandler = LocalUriHandler.current
 
     Column(
         modifier = modifier
@@ -144,6 +146,25 @@ fun KeyboardConfigPanel(
                     onCheckedChange = onToggleInternalSound
                 )
             }
+        }
+
+        // Centro de Feedback & Reporte de Errores Card
+        ConfigCard(title = "Centro de Feedback & Reportes") {
+            Text(
+                text = "¿Encontraste un error o tienes alguna sugerencia para mejorar Ely-Tesia?",
+                fontSize = 11.sp,
+                color = colors.onSurfaceVariant
+            )
+
+            ElyButton(
+                text = "💬 Enviar Feedback / Reportar Error",
+                onClick = { runCatching { uriHandler.openUri("https://github.com/biglexj/Ely-Tesia/issues") } },
+                containerColor = colors.tertiaryContainer,
+                contentColor = colors.onTertiaryContainer,
+                height = 38.dp,
+                cornerRadius = 12.dp,
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+            )
         }
     }
 }

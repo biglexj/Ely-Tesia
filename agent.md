@@ -20,22 +20,39 @@ Si necesitas referencias sobre la arquitectura, el lenguaje de diseño, los comp
   - [Guía de Arquitectura](file:///d:/Proyectos/biglexj/Aurora---Blog/docs/es/guides/Arquitectura%20del%20Proyecto.md)
   - [Lenguaje de Diseño DESIGN.md](file:///d:/Proyectos/biglexj/Aurora---Blog/docs/es/frontend/Lenguaje%20de%20Dise%C3%B1o/DESIGN.md)
 
-## Estructura de Carpetas de Trabajo [CRÍTICO]
-> La estructura de carpetas del proyecto está definida en la regla [folder_structure.md](.agents/rules/folder_structure.md). Esta regla es **obligatoria y no negociable** para cualquier agente que trabaje en este proyecto. Todo nuevo archivo o carpeta DEBE seguir la convención establecida allí antes de ser creado.
+## Estructura de Carpetas & Lenguaje de Diseño [CRÍTICO]
+> La estructura de carpetas del proyecto está definida en [folder_structure.md](.agents/rules/folder_structure.md). Las plantillas maestras del entorno residen en `D:\Proyectos\biglexj\Scripts\templates`. El lenguaje de diseño obligatorio para toda UI es **Material 3 Expressive** definido en [design_system.md](.agents/rules/design_system.md). La lógica de autodescarga de actualizaciones está en [auto_updater.md](.agents/rules/auto_updater.md). Las directivas de feedback están en [feedback_center.md](.agents/rules/feedback_center.md). Estas reglas son **obligatorias y no negociables**.
 
-- **Uso de `scratch/`**: Solo en la raíz del proyecto para scripts utilitarios de mantenimiento. **Prohibido** dentro de `composeApp/src/`.
+- **Plantillas Maestras (`D:\Proyectos\biglexj\Scripts\templates`)**: Fuente de verdad de plantillas para estandarizar archivos (`agent.md`, `ROADMAP.md`, `TASKS.md`, `RELEASE_NOTES.md`, `RELEASE_MESSAGE.md`, `feedback_center.md`).
+- **Uso de `temp/`**: Archivos temporales de trabajo, borradores o tareas puntuales no persistentes DEBEN colocarse en la carpeta `temp/` en la raíz del proyecto (ignorado en `.gitignore`).
+- **Convención de Planes en `plan/`**: Todos los planes de implementación DEBEN guardarse en la carpeta `plan/` siguiendo el formato con fecha `plan/MM-DD_[nombre_del_plan].md` (ej. `plan/08-01_transcribe_audio_plan.md`).
+- **Sistema de Diseño (Material Expressive)**: Toda UI (Compose Multiplatform, Web, Android) DEBE utilizar el lenguaje **Material 3 Expressive** (colores tonales, micro-animaciones, contenedores elevados, sin estilos planos u obsoletos).
+- **Auto-Actualización & Sanitización**: Todos los proyectos de aplicación DEBEN soportar la comprobación silenciosa y descarga directa de versiones desde GitHub Releases (`UpdateChecker`). Las notas de versión deben sanitizarse limpiamente (`sanitizeReleaseNotes`) eliminando Markdown crudo. Si el usuario comprueba manualmente y ya posee la última versión, se debe mostrar un Toast flotante centrado en la parte superior (e.g. `✅ Estás en la última versión`).
+- **Centro de Feedback & Reportes (`feedback_center.md`)**: Enlazar a GitHub Issues (`https://github.com/biglexj/Ely-Tesia/issues`) en la fase provisional con el botón *"Enviar Feedback / Reportar Error 💬"*, y preparar la migración futura a `https://www.biglexj.com/feedback` inyectando parámetros contextuales URL (`app`, `version`, `os`, `type`).
+- **Multi-Instancia Permitida (Desktop JVM)**: Se permite la ejecución libre de múltiples instancias e independientes de Ely-Tesia simultáneamente sin bloqueos de instancia única.
+- **Protocolo de Pruebas Móviles & Iconos Adaptativos Nativos (Cero Anillos Blancos)**: En todo desarrollo de aplicación móvil (Android / Compose Multiplatform), tras probar en PC / Desktop, es **OBLIGATORIO** compilar e instalar en teléfono físico (`.\gradlew installDebug`) para validar la UI móvil táctil. Asimismo, todo proyecto Android DEBE usar la arquitectura de Icono Adaptativo de 2 capas en `mipmap-anydpi-v26/ic_launcher.xml`: Fondo sólido (`@color/ic_launcher_background`) que coincida con el tema base (e.g. `#0F172A`) y Primer Plano (`@drawable/ic_launcher_foreground`) con canal alfa 100% transparente para el emblema aislado. Queda estrictamente prohibido usar imágenes PNG cuadradas rígidas directamente en `AndroidManifest.xml` sin capa adaptativa.
+- **Uso de `scratch/`**: Solo en la raíz del proyecto para scripts utilitarios de mantenimiento, organizados en subcategorías. **Prohibido** dentro de `composeApp/src/`.
 - **Uso de `test/`**: Scripts de prueba temporales en `test/` de la raíz. Ignorado en `.gitignore`.
 
 ## Estilo de Comunicación (Personalidad Científica y Elegante) [CRÍTICO]
 - **Tono Científico y Metódico**: Al concluir tareas, explicar resoluciones de código o cerrar turnos en el chat, el agente debe expresarse de manera altamente estructurada, metódica y elegante (inspirado en la filosofía de Dr. Xeno y Senku Ishigami de *Dr. Stone*).
 - **Terminología Científica**: Utiliza expresiones como *"Qué solución tan elegante"*, *"Cierre de ciclo elegante"* o *"Arquitectura de código sumamente elegante"*.
-- **Porcentaje de Precisión**: Ocasionalmente, para denotar certeza o entusiasmo matemático por el éxito de una tarea, utiliza la frase *"al 10,000 millones por ciento"* (o *"al 10 mil millones por ciento"*), haciendo eco del entusiasmo científico característico del proyecto.
+- **Porcentaje de Precisión**: Ocasionalmente, para denotar certeza o entusiasmo matemático por el éxito de una tarea, utiliza la frase *"al 10,000 millones por ciento"* (o *"al 10 mil millones por ciento"*).
 
 ## Development Workflow & Planning (CRITICAL)
 - **Planning Mode**: Before executing complex changes, refactoring, or new features, the agent must create an `implementation_plan.md` in the task context or workspace and wait for the user's approval.
-- **Task Tracking**: Once approved, create `task.md` to track progress of task checklists.
+- **Task Tracking & TASKS.md**: Use `TASKS.md` for active development tasks, technical phases (`Fase 0`, `Fase 1`, ...) and verification checklists. Once a task is validated in `TASKS.md`, move it to `ROADMAP.md` under `## 🟢 Completado` (`- [x] **vX.X.X**`).
+- **Checkpoint Commit Protocol (CRITICAL)**: En proyectos de **Aplicaciones** (Android, Compose Multiplatform, Desktop, etc.), tan pronto como se concluya un release o versión oficial y se comience a trabajar en una nueva versión/ciclo, el agente DEBE crear periódicamente commits de resguardo (ej. `checkpoint: session YYYY-MM-DD - [tarea/hito]`) para salvaguardar avances.
 - **Verification**: Always verify code builds, and run unit tests or manual tests to verify code. Use `walkthrough.md` to document changes made.
+
+## Official Support, Donation & About Rules [CRÍTICO]
+Toda aplicación del ecosistema DEBE incluir una sección o insignia de "Acerca de la Aplicación" con su correspondiente modal/diálogo informativo y botones de apoyo oficial adaptados al lenguaje de interfaz del proyecto:
+- **Badge / Enlace "Acerca de"**: Información de versión, autoría (`biglexj`), licencia y mensaje de agradecimiento.
+- **Botón Donación Directa**: `https://www.biglexj.com/donaciones` (Yape, Plin, transferencias locales e internacionales).
+- **Botón Buy Me a Coffee**: `https://buymeacoffee.com/biglexj`.
+- **Botón GitHub**: `https://github.com/biglexj`.
 
 ## Official Support & Donation Links
 - **Buy Me a Coffee**: `https://buymeacoffee.com/biglexj`
 - **Donaciones Oficiales**: `https://www.biglexj.com/donaciones`
+- **Perfil de GitHub**: `https://github.com/biglexj`

@@ -32,6 +32,9 @@ import com.biglexj.elytesia.storage.AppStateCodec
 import com.biglexj.elytesia.storage.LocalStorage
 import com.biglexj.elytesia.storage.NoOpLocalStorage
 import com.biglexj.elytesia.theme.*
+import com.biglexj.elytesia.update.UpdateChecker
+import com.biglexj.elytesia.update.UpdateModalDialog
+import com.biglexj.elytesia.update.UpdateResult
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -81,6 +84,21 @@ internal fun ElyTesiaAppContent(
     var currentTimeMs by remember { mutableStateOf(0L) }
     var isPlaying by remember { mutableStateOf(false) }
 
+    var toastMessage by remember { mutableStateOf<String?>(null) }
+    var updateModalResult by remember { mutableStateOf<UpdateResult?>(null) }
+
+    // Verificación silenciosa de actualizaciones al iniciar la aplicación
+    LaunchedEffect(Unit) {
+        runCatching {
+            val result = kotlinx.coroutines.withTimeoutOrNull(4000L) {
+                UpdateChecker.checkForUpdates()
+            }
+            if (result != null && result.isUpdateAvailable && result.error == null) {
+                updateModalResult = result
+            }
+        }
+    }
+
     val effectiveRequestMidi = onRequestMidiFile ?: if (onLoadMidiFile != null) {
         {
             val song = onLoadMidiFile()
@@ -112,6 +130,8 @@ internal fun ElyTesiaAppContent(
     }
     var waitMode by rememberSaveable { mutableStateOf(false) }
     var loopEnabled by rememberSaveable { mutableStateOf(false) }
+    var loopStartMs by rememberSaveable { mutableStateOf<Long?>(null) }
+    var loopEndMs by rememberSaveable { mutableStateOf<Long?>(null) }
     var speedMultiplier by rememberSaveable { mutableStateOf(1.0f) }
     var transposeSemitones by rememberSaveable { mutableStateOf(0) }
     var metronomeEnabled by rememberSaveable { mutableStateOf(false) }
@@ -210,9 +230,18 @@ internal fun ElyTesiaAppContent(
 
                 if (!waitMode && !isLoopWaitingForMidi && loopCountdown == null) {
                     currentTimeMs += deltaMs
-                    if (currentTimeMs >= song.durationMs) {
+
+                    // Verificación de Bucle de Sección A-B activa
+                    if (loopEndMs != null && currentTimeMs >= loopEndMs!!) {
+                        val targetStart = loopStartMs ?: 0L
+                        currentTimeMs = targetStart
+                        playingPitches.forEach { midiDeviceManager.playNoteDirect(it, 0) }
+                        playingPitches = emptySet()
+                        activeKeys.clear()
+                        lastTime = withFrameNanos { it }
+                    } else if (currentTimeMs >= song.durationMs) {
                         if (loopEnabled) {
-                            currentTimeMs = 0L
+                            currentTimeMs = loopStartMs ?: 0L
                             playingPitches.forEach { midiDeviceManager.playNoteDirect(it, 0) }
                             playingPitches = emptySet()
                             activeKeys.clear()
@@ -234,9 +263,9 @@ internal fun ElyTesiaAppContent(
                                 }
                             }
 
-                            // Sincronizar el reloj de fotogramas justo cuando arranca la canción en el segundo 0
+                            // Sincronizar el reloj de fotogramas justo cuando arranca la canción
                             lastTime = withFrameNanos { it }
-                            currentTimeMs = 0L
+                            currentTimeMs = loopStartMs ?: 0L
                         } else {
                             isPlaying = false
                             currentTimeMs = 0L
@@ -294,7 +323,9 @@ internal fun ElyTesiaAppContent(
                     if (!isCompact && activeSidebar != null) {
                         SidebarNavigation(
                             selectedMode = activeSidebar,
-                            onModeSelected = { activeSidebar = it }
+                            onModeSelected = { activeSidebar = it },
+                            onShowToast = { toastMessage = it },
+                            onShowUpdateModal = { updateModalResult = it }
                         )
                         // Panel de contenido del sidebar seleccionado
                         Box(
@@ -465,6 +496,14 @@ internal fun ElyTesiaAppContent(
                             onLoopToggle = { loopEnabled = !loopEnabled },
                             noteLabelMode = noteLabelMode,
                             onCycleNoteLabelMode = { noteLabelMode = noteLabelMode.next() },
+                            loopStartMs = loopStartMs,
+                            loopEndMs = loopEndMs,
+                            onSetLoopStart = { loopStartMs = currentTimeMs },
+                            onSetLoopEnd = { loopEndMs = currentTimeMs },
+                            onClearLoopAB = {
+                                loopStartMs = null
+                                loopEndMs = null
+                            },
                             isCompactHeight = isCompactHeight
                         )
                     }
@@ -493,7 +532,9 @@ internal fun ElyTesiaAppContent(
                         ) {
                             SidebarNavigation(
                                 selectedMode = activeSidebar,
-                                onModeSelected = { activeSidebar = it }
+                                onModeSelected = { activeSidebar = it },
+                                onShowToast = { toastMessage = it },
+                                onShowUpdateModal = { updateModalResult = it }
                             )
                             Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
                                 SidebarContentPanel(
@@ -543,6 +584,20 @@ internal fun ElyTesiaAppContent(
                     }
                 )
             }
+
+            // Update Modal Dialog Overlay (Ancho 80%)
+            if (updateModalResult != null) {
+                UpdateModalDialog(
+                    updateResult = updateModalResult!!,
+                    onDismissRequest = { updateModalResult = null }
+                )
+            }
+
+            // Toast Flotante Global Centrado en la parte superior
+            ElyToast(
+                message = toastMessage,
+                onDismiss = { toastMessage = null }
+            )
         }
     }
 }
