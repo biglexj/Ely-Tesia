@@ -61,30 +61,12 @@ fun LibraryPanel(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Biblioteca de Canciones",
-                color = colors.onSurface,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            if (onRequestMidiFile != null) {
-                ElyButton(
-                    text = "📥 Importar MIDI",
-                    onClick = onRequestMidiFile,
-                    containerColor = colors.primaryContainer,
-                    contentColor = colors.onPrimaryContainer,
-                    height = 32.dp,
-                    fontSize = 11.sp,
-                    contentPadding = PaddingValues(horizontal = 8.dp)
-                )
-            }
-        }
+        Text(
+            text = "Biblioteca de Canciones",
+            color = colors.onSurface,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold
+        )
 
         OutlinedTextField(
             value = searchQuery,
@@ -111,6 +93,18 @@ fun LibraryPanel(
                     onClick = { selectedDifficulty = diff }
                 )
             }
+        }
+
+        if (onRequestMidiFile != null) {
+            ElyButton(
+                text = "📥 Importar Archivo MIDI",
+                onClick = onRequestMidiFile,
+                containerColor = colors.primaryContainer,
+                contentColor = colors.onPrimaryContainer,
+                height = 42.dp,
+                fontSize = 13.sp,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
 
 
