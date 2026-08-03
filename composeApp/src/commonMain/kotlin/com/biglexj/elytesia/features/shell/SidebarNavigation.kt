@@ -5,6 +5,8 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -37,6 +39,7 @@ fun SidebarNavigation(
         modifier = modifier
             .width(210.dp)
             .fillMaxHeight()
+            .verticalScroll(rememberScrollState())
             .background(colors.background)
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -88,7 +91,7 @@ fun SidebarNavigation(
             onClick = { onModeSelected(SidebarMode.TEMAS) }
         )
 
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.heightIn(min = 16.dp))
 
         var showAboutDialog by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
 
