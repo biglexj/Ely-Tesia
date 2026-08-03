@@ -1,11 +1,22 @@
 # 🚀 Ely-Tesia - Historial de Versiones
-📌 **Versión actual: `1.0.6` · Versión mínima requerida: `1.0.0`**
+📌 **Versión actual: `1.0.7` · Versión mínima requerida: `1.0.0`**
 
 > [!IMPORTANT]
 > **Regla del .9 para Versionado:**
 > - Nunca se debe pasar de una versión de parche `.9` (ej. de `1.0.9` no se pasa a `1.1.0`). Al alcanzar el límite del parche `.9`, se incrementa el número menor/secundario (ej. pasando a `1.1.0`).
 > - De igual manera, al alcanzar el límite de la versión menor `1.9.9` (o ante hitos de arquitectura significativos posteriores a `1.9.x`), se debe saltar obligatoriamente al siguiente número mayor completo, pasando a **`2.0.0`**. No se permiten números como `1.9.10` o `1.10.x`.
 > - **Nombres de Dulces para Versiones Mayores:** Cada versión mayor (ej. `1.0.0`, `2.0.0`) debe nombrarse con un nombre de dulce o postre al estilo de las versiones clásicas de Android en orden alfabético (ej. `v1.0.0 (Apple Pie Update)`, `v2.0.0 (Banana Bread Update)`). Este nombre debe quedar reflejado de manera coordinada en el título de `README.md`, en `RELEASE_NOTES.md` al documentar la release, y en los archivos de configuración del proyecto.
+
+### 🚀 v1.0.7 — "Persistencia de Canciones, Modo Práctica por Mano & Optimización UI" (patch) (02/08/2026)
+
+Esta actualización introduce el nuevo **Modo Práctica por Mano**, permitiendo al usuario aislar y ejercitar de forma independiente la mano izquierda (notas graves), la mano derecha (notas agudas) o ambas manos simultáneamente. El teclado físico y el sistema de evaluación adaptan dinámicamente las notas iluminadas y los aciertos en tiempo real según la mano seleccionada.
+
+Se implementó la **persistencia automática de canciones importadas** entre sesiones, asegurando que las canciones añadidas por el usuario se conserven de forma permanente al reiniciar la aplicación. Asimismo, se optimizó el motor de temas visuales dinámicos diferenciando los tonos de ambas manos para una mejor orientación cromática en el teclado.
+
+En la interfaz de usuario, los marcadores de bucle de sección A-B se rediseñaron con notación clara (`📍 A: Inicio` / `📌 B: Fin`), el botón de importación MIDI se expandió a todo el ancho del panel para mayor facilidad táctil, y los selectores de dificultad y la barra lateral de navegación se dotaron de desplazamiento fluido adaptativo sin cortes de texto tanto en pantalla vertical como horizontal.
+
+---
+
 
 ### 🚀 v1.0.6 — **"Experiencia Móvil Adaptativa, Transposición Musical & Iconos Nativos" (patch)** (25/07/2026)
 

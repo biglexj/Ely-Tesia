@@ -393,10 +393,12 @@ Estado: **Idea**
 
 ### Versión 1.0.7
 
-- **Motor de Clasificación Automática de Dificultad (`DifficultyAnalyzer.kt`)**: Evaluación multimétrica heurística (BPM, densidad de notas NPS, polifonía simultánea de acordes, rango tonal/span y duración) para canciones importadas.
-- **Práctica por Secciones (Bucle A-B)**: Marcado de puntos de inicio (📍 Marcar A) y fin (📌 Marcar B) en la barra de controles para repetición continua de fragmentos difíciles con reinicio automático de reloj.
-- **Integración del Centro de Feedback & Reportes**: Enlace directo a GitHub Issues en la interfaz ("Acerca de" y panel de Ajustes) conforme al estándar `feedback_center.md`.
-- **Estandarización de Templates del Ecosistema**: Actualización completa de reglas locales (`.agents/rules/base.md`, `agent.md`) alineadas a `D:\Proyectos\biglexj\Scripts\templates`.
+- **Modo Práctica por Mano**: Ejercitación aislada e independiente de mano izquierda (notas graves), mano derecha (notas agudas) o ambas manos simultáneamente (🎹 / 🫲 / 🫱).
+- **Persistencia Automática de Canciones Importadas**: Almacenamiento local persistente (`state.txt`) de canciones añadidas por el usuario entre inicios de aplicación.
+- **Visualización Diferenciada por Mano**: Motor de temas dinámicos con diferenciación tonal para la mano izquierda (color secundario) y derecha (color primario).
+- **Práctica por Secciones (Bucle A-B)**: Marcado con notación intuitiva (`📍 A: Inicio` / `📌 B: Fin`) para la repetición continua de fragmentos de la canción.
+- **Optimizaciones de UI y Navegación Táctil**: Botón de importación MIDI de ancho completo (`fillMaxWidth`), barra lateral scrolleable con pie de página fijado abajo en modo vertical, y chips de dificultad scrolleables sin saltos de línea.
+- **Estandarización de Templates del Ecosistema**: Sincronización completa de reglas locales (`.agents/rules/`) alineadas a `D:\Proyectos\biglexj\Scripts\templates`.
 
 ---
 
