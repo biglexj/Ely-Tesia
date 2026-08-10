@@ -108,6 +108,8 @@ class SimpleSoftwareSynth {
 
     init {
         synthThread = thread(start = true, isDaemon = true, name = "SoftwareSynthThread") {
+            // Dormir 100ms para permitir que Compose Desktop complete la instanciación de la ventana AWT sin contención WASAPI
+            try { Thread.sleep(100) } catch (e: Exception) {}
             try {
                 val format = AudioFormat(SAMPLE_RATE, 16, 2, true, false)
                 val info = DataLine.Info(SourceDataLine::class.java, format)
@@ -444,48 +446,13 @@ class DesktopMidiDeviceManager : MidiDeviceManager {
                 override fun close() {}
             }
             println("Teclado MIDI '$deviceName' conectado con éxito.")
-
-            // Buscar el puerto de salida del teclado para gestionar Local Control.
-            // Local Control OFF (CC 122, valor 0): silencia el teclado físico → solo suena el sintetizador interno.
-            // Local Control ON  (CC 122, valor 127): restaura el audio del teclado → úsalo cuando el sintetizador esté apagado.
-            try {
-                val outInfo = infos.firstOrNull { 
-                    it.name == deviceName && 
-                    try { MidiSystem.getMidiDevice(it).maxReceivers != 0 } catch(e: Exception) { false }
-                }
-                if (outInfo != null) {
-                    val outDev = MidiSystem.getMidiDevice(outInfo)
-                    outDev.open()
-                    activeOutputDevice = outDev
-                    // Si el sonido interno está activo, silenciamos el hardware; si no, lo dejamos sonar.
-                    val localControlValue = if (internalSoundEnabled) 0 else 127
-                    val msg = ShortMessage()
-                    msg.setMessage(ShortMessage.CONTROL_CHANGE, 0, 122, localControlValue)
-                    outDev.receiver.send(msg, -1)
-                    println("Local Control del teclado físico configurado a: ${if (localControlValue == 0) "OFF (solo sintetizador)" else "ON (hardware activo)"}")
-                }
-            } catch (e: Exception) {
-                println("Aviso: No se pudo configurar el Local Control del teclado físico (puede no soportarlo).")
-            }
-
         } catch (e: Exception) {
             println("Error al conectar teclado MIDI: ${e.message}")
         }
     }
 
     override fun closeDevice() {
-        // Restaurar Local Control ON al desconectar para no dejar el teclado mudo
-        try {
-            activeOutputDevice?.let { outDev ->
-                if (outDev.isOpen) {
-                    val msg = ShortMessage()
-                    msg.setMessage(ShortMessage.CONTROL_CHANGE, 0, 122, 127)
-                    outDev.receiver.send(msg, -1)
-                    outDev.close()
-                    println("Local Control restaurado a ON al desconectar el teclado.")
-                }
-            }
-        } catch (e: Exception) {}
+        activeOutputDevice?.close()
         activeOutputDevice = null
         activeDevice?.close()
         activeDevice = null
@@ -515,20 +482,6 @@ class DesktopMidiDeviceManager : MidiDeviceManager {
     override fun setInternalSoundEnabled(enabled: Boolean) {
         internalSoundEnabled = enabled
         if (!enabled) softwareSynth.allNotesOff()
-        // Sincronizar Local Control del teclado físico:
-        // - Sintetizador ON  → Local Control OFF (el hardware no suena, solo el synth)
-        // - Sintetizador OFF → Local Control ON  (el hardware suena por sus propios altavoces/salida de audio)
-        try {
-            activeOutputDevice?.let { outDev ->
-                if (outDev.isOpen) {
-                    val localControlValue = if (enabled) 0 else 127
-                    val msg = ShortMessage()
-                    msg.setMessage(ShortMessage.CONTROL_CHANGE, 0, 122, localControlValue)
-                    outDev.receiver.send(msg, -1)
-                    println("Local Control: ${if (localControlValue == 0) "OFF" else "ON"} (internalSound=$enabled)")
-                }
-            }
-        } catch (e: Exception) {}
     }
 
     override fun getAudioOutputs(): List<String> {

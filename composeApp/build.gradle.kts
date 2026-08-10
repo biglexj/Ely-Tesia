@@ -40,7 +40,11 @@ kotlin {
         }
     }
     
-    jvm("desktop")
+    jvm("desktop") {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
+    }
     
     sourceSets {
         val commonMain by getting {
@@ -111,10 +115,6 @@ android {
 compose.desktop {
     application {
         mainClass = "com.biglexj.elytesia.MainKt"
-        jvmArgs += listOf(
-            "-Dskiko.renderApi=SOFTWARE_COMPAT",
-            "-Djava.awt.headless=false"
-        )
         nativeDistributions {
             targetFormats(
                 org.jetbrains.compose.desktop.application.dsl.TargetFormat.Msi,
@@ -150,3 +150,4 @@ tasks.matching {
 }.configureEach {
     dependsOn(copyMidiDemosTask)
 }
+

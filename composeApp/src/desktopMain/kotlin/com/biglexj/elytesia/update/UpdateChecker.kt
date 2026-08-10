@@ -10,7 +10,7 @@ import java.net.URL
  * Consulta la GitHub API de releases públicas para obtener la última versión disponible.
  */
 actual object UpdateChecker {
-    actual val currentVersion: String = "1.0.6"
+    actual val currentVersion: String = "1.0.8"
 
     private const val GITHUB_RELEASES_API =
         "https://api.github.com/repos/biglexj/Ely-Tesia/releases/latest"

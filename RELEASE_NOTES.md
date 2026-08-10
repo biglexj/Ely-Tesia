@@ -1,5 +1,5 @@
 # 🚀 Ely-Tesia - Historial de Versiones
-📌 **Versión actual: `1.0.7` · Versión mínima requerida: `1.0.0`**
+📌 **Versión actual: `1.0.8` · Versión mínima requerida: `1.0.0`**
 
 > [!IMPORTANT]
 > **Regla del .9 para Versionado:**
@@ -7,7 +7,19 @@
 > - De igual manera, al alcanzar el límite de la versión menor `1.9.9` (o ante hitos de arquitectura significativos posteriores a `1.9.x`), se debe saltar obligatoriamente al siguiente número mayor completo, pasando a **`2.0.0`**. No se permiten números como `1.9.10` o `1.10.x`.
 > - **Nombres de Dulces para Versiones Mayores:** Cada versión mayor (ej. `1.0.0`, `2.0.0`) debe nombrarse con un nombre de dulce o postre al estilo de las versiones clásicas de Android en orden alfabético (ej. `v1.0.0 (Apple Pie Update)`, `v2.0.0 (Banana Bread Update)`). Este nombre debe quedar reflejado de manera coordinada en el título de `README.md`, en `RELEASE_NOTES.md` al documentar la release, y en los archivos de configuración del proyecto.
 
-### 🚀 v1.0.7 — "Persistencia de Canciones, Modo Práctica por Mano & Optimización UI" (patch) (02/08/2026)
+### 🚀 v1.0.8 — "Corrección de Audio MIDI, Iconos de Ventana & Sincronización de Versión" (patch) (09/08/2026)
+
+Esta actualización corrige de forma crítica el comportamiento de salida de audio MIDI en teclados físicos, soluciona el icono principal en la barra de ventana de escritorio, añade interacciones de puntero fluido en selectores desplegables y sincroniza dinámicamente el comprobador de versiones.
+
+Se eliminó el envío intrusivo de comandos `Local Control` (`CC 122`) enviadas al puerto de salida MIDI de los teclados del usuario. Anteriormente, la aplicación silenciaba por hardware el altavoz propio del teclado MIDI al conectarlo. Con esta corrección, los teclados MIDI físicos conservan su audio y volumen de fábrica sin sufrir silenciados forzados ni desconfiguraciones de hardware. El switch "Salida de Sonido Virtual" en el panel de Configuración ahora controla únicamente el sintetizador de software interno de Ely-Tesia de forma aislada.
+
+Se asignó el icono oficial de Ely-Tesia (`elytesia-icon.png`) al contenedor de ventana en Desktop JVM (`Main.kt`), renderizándolo correctamente en la barra de título superior izquierda y en la barra de tareas de Windows. En los selectores desplegables de dispositivo MIDI (`KeyboardConfigPanel.kt` e `InstrumentConfigPanel.kt`), se configuró la propiedad `pointerHoverIcon(PointerIcon.Hand)` para que el puntero cambie a la mano de selección (`Hand`) al pasar sobre los menús desplegables en lugar de la barra de edición de texto (`I-beam`), rediseñando su aspecto visual para que opere en una sola línea.
+
+Finalmente, se resolvió un bloqueo crítico de inicio (bucle al 95%) restaurando la persistencia de la posición de ventana de forma puramente nativa en Compose, y se refinaron las proporciones adaptativas de los diálogos informativos y de actualización, ajustando el uso del espacio vertical en PC y limitando el alto al 70% en dispositivos móviles. Se actualizó la versión interna a `v1.0.8` y se automatizó el texto de versión en la barra lateral.
+
+---
+
+
 
 Esta actualización introduce el nuevo **Modo Práctica por Mano**, permitiendo al usuario aislar y ejercitar de forma independiente la mano izquierda (notas graves), la mano derecha (notas agudas) o ambas manos simultáneamente. El teclado físico y el sistema de evaluación adaptan dinámicamente las notas iluminadas y los aciertos en tiempo real según la mano seleccionada.
 

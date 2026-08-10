@@ -13,6 +13,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import com.biglexj.elytesia.midi.InstrumentType
 import com.biglexj.elytesia.shared.components.ElyButton
 import com.biglexj.elytesia.theme.AuroraViolet
@@ -63,14 +65,14 @@ fun InstrumentConfigPanel(
                 ExposedDropdownMenuBox(
                     expanded = midiExpanded,
                     onExpandedChange = { midiExpanded = !midiExpanded },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f).pointerHoverIcon(PointerIcon.Hand)
                 ) {
                     OutlinedTextField(
                         value = if (selectedMidiDevice.isBlank()) "Sin teclado conectado" else selectedMidiDevice,
                         onValueChange = {},
                         readOnly = true,
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = midiExpanded) },
-                        modifier = Modifier.menuAnchor()
+                        modifier = Modifier.menuAnchor().pointerHoverIcon(PointerIcon.Hand)
                     )
                     ExposedDropdownMenu(
                         expanded = midiExpanded,

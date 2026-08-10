@@ -58,11 +58,14 @@ fun UpdateModalDialog(
             val isLandscapeMobile = maxHeight < 500.dp
             val isDesktop = maxWidth >= 700.dp && !isLandscapeMobile
             val widthFraction = when {
-                isDesktop -> 0.40f
-                isLandscapeMobile -> 0.65f
-                else -> 0.85f
+                isDesktop -> 0.32f
+                isLandscapeMobile -> 0.60f
+                else -> 0.80f
             }
-            val maxCustomWidth = if (isDesktop) 420.dp else 480.dp
+            val maxCustomWidth = if (isDesktop) 380.dp else 400.dp
+
+            val maxCustomHeight = if (!isDesktop && !isLandscapeMobile) maxHeight * 0.70f else maxHeight - 24.dp
+            val minCustomHeight = if (isDesktop) 500.dp.coerceAtMost(maxCustomHeight) else androidx.compose.ui.unit.Dp.Unspecified
 
             Surface(
                 shape = RoundedCornerShape(24.dp),
@@ -71,7 +74,7 @@ fun UpdateModalDialog(
                 modifier = Modifier
                     .fillMaxWidth(widthFraction)
                     .widthIn(max = maxCustomWidth)
-                    .heightIn(max = maxHeight - 24.dp)
+                    .heightIn(min = minCustomHeight, max = maxCustomHeight)
                     .padding(6.dp)
             ) {
                 Column(

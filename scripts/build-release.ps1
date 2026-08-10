@@ -15,12 +15,9 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$root = $PSScriptRoot
+$root = Split-Path -Parent $PSScriptRoot
 $releaseDir = Join-Path $root "release"
 $versionFile = Join-Path $root "gradle.properties"
-
-# ─────────────────────────────────────────────
-# 1. Leer / determinar versión
 # ─────────────────────────────────────────────
 $versionContent = Get-Content $versionFile -Raw -Encoding UTF8
 $currentVersion = if ($versionContent -match '(?m)^elytesia\.versionName=([\d.]+)$') {

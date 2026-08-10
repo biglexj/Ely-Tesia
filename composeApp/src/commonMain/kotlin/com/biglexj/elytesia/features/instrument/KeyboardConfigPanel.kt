@@ -13,6 +13,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.platform.LocalUriHandler
 import com.biglexj.elytesia.shared.components.ElyButton
 
@@ -61,15 +63,34 @@ fun KeyboardConfigPanel(
                 ExposedDropdownMenuBox(
                     expanded = midiExpanded,
                     onExpandedChange = { midiExpanded = !midiExpanded },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f).pointerHoverIcon(PointerIcon.Hand)
                 ) {
-                    OutlinedTextField(
-                        value = if (selectedMidiDevice.isBlank()) "Sin teclado conectado" else selectedMidiDevice,
-                        onValueChange = {},
-                        readOnly = true,
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = midiExpanded) },
-                        modifier = Modifier.menuAnchor()
-                    )
+                    Box(
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
+                            .height(44.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(colors.surface)
+                            .pointerHoverIcon(PointerIcon.Hand),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = if (selectedMidiDevice.isBlank()) "Sin teclado conectado" else selectedMidiDevice,
+                                color = colors.onSurface,
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                fontSize = 13.sp,
+                                modifier = Modifier.weight(1f).padding(end = 8.dp)
+                            )
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = midiExpanded)
+                        }
+                    }
                     ExposedDropdownMenu(
                         expanded = midiExpanded,
                         onDismissRequest = { midiExpanded = false }

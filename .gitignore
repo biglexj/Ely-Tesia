@@ -49,3 +49,7 @@ temp/
 *.pfx
 *.pem
 keystore.properties
+
+# Archivos temporales de agentes
+/test/
+/scratch/

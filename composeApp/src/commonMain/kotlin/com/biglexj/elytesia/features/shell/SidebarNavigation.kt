@@ -137,7 +137,7 @@ fun SidebarNavigation(
                                 color = colors.onSurface
                             )
                             Text(
-                                text = "Ely-Tesia v1.0.6 (2026)",
+                                text = "Ely-Tesia v${com.biglexj.elytesia.update.UpdateChecker.currentVersion} (2026)",
                                 fontSize = 9.sp,
                                 color = colors.onSurfaceVariant
                             )

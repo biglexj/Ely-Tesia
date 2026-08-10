@@ -1,6 +1,8 @@
 package com.biglexj.elytesia
 
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
@@ -12,14 +14,19 @@ import com.biglexj.elytesia.features.library.*
 import com.biglexj.elytesia.midi.DesktopMidiParser
 import com.biglexj.elytesia.midi.getPlatformMidiDeviceManager
 import com.biglexj.elytesia.storage.DesktopLocalStorage
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.awt.FileDialog
 import java.awt.Frame
 import java.io.File
+
 
 // ─── Persistencia de estado de ventana ───────────────────────────────────────
 private data class PersistentWindowState(
     val widthDp: Int = 1280,
     val heightDp: Int = 820,
+    val positionXDp: Int? = null,
+    val positionYDp: Int? = null,
     val isMaximized: Boolean = false
 ) {
     companion object {
@@ -32,8 +39,10 @@ private data class PersistentWindowState(
                 }
                 val w = (lines["width"]?.toIntOrNull() ?: 1280).coerceIn(600, 3840)
                 val h = (lines["height"]?.toIntOrNull() ?: 820).coerceIn(400, 2160)
+                val posX = lines["positionX"]?.toIntOrNull()
+                val posY = lines["positionY"]?.toIntOrNull()
                 val max = lines["isMaximized"]?.toBooleanStrictOrNull() ?: false
-                PersistentWindowState(w, h, max)
+                PersistentWindowState(w, h, posX, posY, max)
             }.getOrDefault(PersistentWindowState())
         }
 
@@ -41,51 +50,45 @@ private data class PersistentWindowState(
             runCatching {
                 file.parentFile?.mkdirs()
                 val isMax = state.placement == WindowPlacement.Maximized
+                val prev = load(file)
                 val newWidth: Int
                 val newHeight: Int
+                val newPosX: Int?
+                val newPosY: Int?
+
                 if (isMax) {
-                    val prev = load(file)
                     newWidth = prev.widthDp
                     newHeight = prev.heightDp
+                    newPosX = prev.positionXDp
+                    newPosY = prev.positionYDp
                 } else {
                     newWidth = state.size.width.value.toInt().coerceIn(600, 3840)
                     newHeight = state.size.height.value.toInt().coerceIn(400, 2160)
+                    val pos = state.position
+                    if (pos is WindowPosition.Absolute) {
+                        newPosX = pos.x.value.toInt()
+                        newPosY = pos.y.value.toInt()
+                    } else {
+                        newPosX = prev.positionXDp
+                        newPosY = prev.positionYDp
+                    }
                 }
-                file.writeText("width=$newWidth\nheight=$newHeight\nisMaximized=$isMax\n")
+                val sb = StringBuilder()
+                sb.appendLine("width=$newWidth")
+                sb.appendLine("height=$newHeight")
+                if (newPosX != null && newPosY != null) {
+                    sb.appendLine("positionX=$newPosX")
+                    sb.appendLine("positionY=$newPosY")
+                }
+                sb.appendLine("isMaximized=$isMax")
+                file.writeText(sb.toString())
             }
         }
     }
 }
 
 fun main() {
-    val demoFile = File("demo_escala.mid")
-    if (!demoFile.exists()) {
-        try {
-            DesktopMidiParser.generateSampleMidiFile(demoFile)
-        } catch (e: Exception) {
-            println("Error al generar MIDI de prueba: ${e.message}")
-        }
-    }
-
-    val midiDemosDir = File("midi_demos")
-    if (midiDemosDir.exists() && midiDemosDir.isDirectory) {
-        val filesToCheck = listOf("bach_prelude.mid", "escala_do.mid", "bella_ciao.mid", "gymnopedie.mid")
-        val needsRecreation = filesToCheck.any {
-            val f = File(midiDemosDir, it)
-            !f.exists() || f.length() < 100
-        }
-        if (needsRecreation) {
-            try {
-                DesktopMidiParser.writeMidiFile(generateDemoSong(), File(midiDemosDir, "bach_prelude.mid"))
-                DesktopMidiParser.writeMidiFile(generateScaleSong(), File(midiDemosDir, "escala_do.mid"))
-                DesktopMidiParser.writeMidiFile(generateBellaCiaoSong(), File(midiDemosDir, "bella_ciao.mid"))
-                DesktopMidiParser.writeMidiFile(generateGymnopedieSong(), File(midiDemosDir, "gymnopedie.mid"))
-            } catch (e: Exception) {
-                println("Error al auto-poblar demos: ${e.message}")
-            }
-        }
-    }
-
+    println(">>> [ELY-TESIA] Iniciando secuencia de arranque de app desktop...")
     // Forzar que AWT use el hilo correcto desde el inicio en macOS/Windows
     System.setProperty("apple.awt.UIElement", "false")
 
@@ -102,8 +105,12 @@ fun main() {
         val windowState = remember {
             WindowState(
                 size = DpSize(savedWindowState.widthDp.dp, savedWindowState.heightDp.dp),
-                position = WindowPosition.PlatformDefault,
-                placement = WindowPlacement.Floating
+                position = if (savedWindowState.positionXDp != null && savedWindowState.positionYDp != null) {
+                    WindowPosition(savedWindowState.positionXDp.dp, savedWindowState.positionYDp.dp)
+                } else {
+                    WindowPosition(Alignment.Center)
+                },
+                placement = if (savedWindowState.isMaximized) WindowPlacement.Maximized else WindowPlacement.Floating
             )
         }
 
@@ -113,11 +120,35 @@ fun main() {
                 exitApplication()
             },
             title = "Ely-Tesia - Visualizador MIDI",
+            icon = painterResource("elytesia-icon.png"),
             state = windowState
         ) {
             LaunchedEffect(Unit) {
                 if (savedWindowState.isMaximized) {
                     windowState.placement = WindowPlacement.Maximized
+                }
+                withContext(Dispatchers.IO) {
+                    runCatching {
+                        val demoFile = File("demo_escala.mid")
+                        if (!demoFile.exists()) {
+                            DesktopMidiParser.generateSampleMidiFile(demoFile)
+                        }
+
+                        val midiDemosDir = File("midi_demos")
+                        if (midiDemosDir.exists() && midiDemosDir.isDirectory) {
+                            val filesToCheck = listOf("bach_prelude.mid", "escala_do.mid", "bella_ciao.mid", "gymnopedie.mid")
+                            val needsRecreation = filesToCheck.any {
+                                val f = File(midiDemosDir, it)
+                                !f.exists() || f.length() < 100
+                            }
+                            if (needsRecreation) {
+                                DesktopMidiParser.writeMidiFile(generateDemoSong(), File(midiDemosDir, "bach_prelude.mid"))
+                                DesktopMidiParser.writeMidiFile(generateScaleSong(), File(midiDemosDir, "escala_do.mid"))
+                                DesktopMidiParser.writeMidiFile(generateBellaCiaoSong(), File(midiDemosDir, "bella_ciao.mid"))
+                                DesktopMidiParser.writeMidiFile(generateGymnopedieSong(), File(midiDemosDir, "gymnopedie.mid"))
+                            }
+                        }
+                    }
                 }
                 window.toFront()
                 window.requestFocusInWindow()
