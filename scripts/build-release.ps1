@@ -39,27 +39,32 @@ $releaseNotesPath = Join-Path $root $ReleaseNotesFile
 # 1. Leer y validar versión
 # ─────────────────────────────────────────────
 $versionContent = Get-Content -LiteralPath $versionFile -Raw -Encoding UTF8
-$currentVersion = if ($versionContent -match '(?m)^elytesia\.versionName=([\d.]+)$') {
+$currentVersion = if ($versionContent -match '(?m)^elytesia\.versionName=([\d.]+)\r?$') {
     $Matches[1]
 } else {
     throw "No se pudo leer elytesia.versionName en gradle.properties."
 }
 
-if ($Version -eq 'local') {
+if ($Version -match '^(?i)local|-local|-localonly$') {
     $Version = $currentVersion
     $LocalOnly = $true
 }
 
 if (-not $Version) {
-    $parts = $currentVersion -split '\.'
-    $parts[-1] = [int]$parts[-1] + 1
-    $Version = $parts -join '.'
-    Write-Host "Versión detectada automáticamente: $Version" -ForegroundColor Cyan
+    if ($LocalOnly) {
+        $Version = $currentVersion
+        Write-Host "Modo local: compilando versión actual: $Version" -ForegroundColor Cyan
+    } else {
+        $parts = $currentVersion -split '\.'
+        $parts[-1] = [int]$parts[-1] + 1
+        $Version = $parts -join '.'
+        Write-Host "Versión detectada automáticamente: $Version" -ForegroundColor Cyan
+    }
 }
 
 Assert-SemanticVersion $Version
 
-if ($versionContent -match '(?m)^elytesia\.versionCode=(\d+)$') {
+if ($versionContent -match '(?m)^elytesia\.versionCode=(\d+)\r?$') {
     $currentCode = [int]$Matches[1]
     $newCode = if ($Version -eq $currentVersion) { $currentCode } else { $currentCode + 1 }
 } else {
@@ -87,8 +92,8 @@ Write-Host ""
 # ─────────────────────────────────────────────
 Write-Host "[1/7] Actualizando versión centralizada..." -ForegroundColor Yellow
 $versionContent = $versionContent `
-    -replace '(?m)^(elytesia\.versionCode=)\d+$', "`${1}$newCode" `
-    -replace '(?m)^(elytesia\.versionName=)[\d.]+$', "`${1}$Version"
+    -replace '(?m)^(elytesia\.versionCode=)\d+\r?$', "`${1}$newCode" `
+    -replace '(?m)^(elytesia\.versionName=)[\d.]+\r?$', "`${1}$Version"
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 [System.IO.File]::WriteAllText($versionFile, $versionContent, $utf8NoBom)
 

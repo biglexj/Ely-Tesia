@@ -10,32 +10,32 @@
 [CmdletBinding()]
 param(
     [Parameter(Position = 0)]
-    [string]$ModeOrVersion,
+    [string]$Version,
+    [switch]$LocalOnly,
+    [switch]$SkipWindows,
+    [switch]$SkipAndroid,
+    [switch]$SkipTests,
     [Parameter(ValueFromRemainingArguments = $true)]
     [string[]]$RemainingArgs
 )
+
+# Detectar si se pasó 'local' como primer parámetro posicional
+if ($Version -match '^(?i)local|-local|-localonly$') {
+    $Version = $null
+    $LocalOnly = $true
+}
 
 $scriptPath = Join-Path $PSScriptRoot "scripts\build-release.ps1"
 if (-not (Test-Path -LiteralPath $scriptPath)) {
     throw "No se encontró el script de release en $scriptPath"
 }
 
-$passArgs = @()
-if ($ModeOrVersion -match '^(?i)local|-local|-localonly$') {
-    $passArgs += "-LocalOnly"
-} elseif ($ModeOrVersion) {
-    $passArgs += $ModeOrVersion
-}
+$splat = @{}
+if ($Version) { $splat['Version'] = $Version }
+if ($LocalOnly) { $splat['LocalOnly'] = $true }
+if ($SkipWindows) { $splat['SkipWindows'] = $true }
+if ($SkipAndroid) { $splat['SkipAndroid'] = $true }
+if ($SkipTests) { $splat['SkipTests'] = $true }
 
-if ($RemainingArgs) {
-    foreach ($arg in $RemainingArgs) {
-        if ($arg -match '^(?i)local|-local|-localonly$') {
-            $passArgs += "-LocalOnly"
-        } else {
-            $passArgs += $arg
-        }
-    }
-}
-
-& $scriptPath @passArgs
+& $scriptPath @splat @RemainingArgs
 exit $LASTEXITCODE
