@@ -45,6 +45,11 @@ $currentVersion = if ($versionContent -match '(?m)^elytesia\.versionName=([\d.]+
     throw "No se pudo leer elytesia.versionName en gradle.properties."
 }
 
+if ($Version -eq 'local') {
+    $Version = $currentVersion
+    $LocalOnly = $true
+}
+
 if (-not $Version) {
     $parts = $currentVersion -split '\.'
     $parts[-1] = [int]$parts[-1] + 1
