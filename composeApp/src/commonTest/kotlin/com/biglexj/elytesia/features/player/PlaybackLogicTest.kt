@@ -47,4 +47,17 @@ class PlaybackLogicTest {
 
         assertEquals(emptyList(), index.visibleNotesAt(1_000L, 1_000L))
     }
+
+    @Test
+    fun repeatedConsecutiveNotesProduceDistinctActiveEvents() {
+        val note1 = NoteEvent(64, 1_000L, 200L, 80, 0)
+        val note2 = NoteEvent(64, 1_200L, 200L, 85, 0)
+        val note3 = NoteEvent(64, 1_400L, 200L, 90, 0)
+        val testSong = Song("RepeatedNotes", 2_000L, listOf(note1, note2, note3))
+        val index = PlaybackLogic.TimelineIndex(testSong.notes)
+
+        assertEquals(listOf(note1), index.activeNotesAt(1_100L))
+        assertEquals(listOf(note2), index.activeNotesAt(1_300L))
+        assertEquals(listOf(note3), index.activeNotesAt(1_500L))
+    }
 }

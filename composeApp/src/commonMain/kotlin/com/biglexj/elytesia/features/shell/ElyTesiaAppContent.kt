@@ -28,6 +28,7 @@ import com.biglexj.elytesia.midi.InstrumentType
 import com.biglexj.elytesia.midi.MidiDeviceManager
 import com.biglexj.elytesia.midi.getPlatformMidiDeviceManager
 import com.biglexj.elytesia.model.Song
+import com.biglexj.elytesia.model.NoteEvent
 import com.biglexj.elytesia.shared.components.ElyToast
 import com.biglexj.elytesia.storage.AppStateCodec
 import com.biglexj.elytesia.storage.LocalStorage
@@ -278,7 +279,7 @@ internal fun ElyTesiaAppContent(
         val timeline = PlaybackLogic.TimelineIndex(song.notes)
 
         var lastTime = withFrameNanos { it }
-        var playingPitches = setOf<Int>()
+        var playingNotes = emptyMap<Int, NoteEvent>()
         var previousActiveKeys = emptyMap<Int, Int>()
 
         try {
@@ -299,8 +300,8 @@ internal fun ElyTesiaAppContent(
                         val targetStart = (currentLoopStartMs ?: 0L).toFloat()
                         currentTimeFractionalMs = targetStart
                         currentTimeMs = targetStart.toLong()
-                        playingPitches.forEach { midiDeviceManager.playNoteDirect(it, 0) }
-                        playingPitches = emptySet()
+                        playingNotes.keys.forEach { midiDeviceManager.playNoteDirect(it, 0) }
+                        playingNotes = emptyMap()
                         activeKeys.clear()
                         previousActiveKeys = emptyMap()
                         lastTime = withFrameNanos { it }
@@ -309,8 +310,8 @@ internal fun ElyTesiaAppContent(
                             val targetStart = (currentLoopStartMs ?: 0L).toFloat()
                             currentTimeFractionalMs = targetStart
                             currentTimeMs = targetStart.toLong()
-                            playingPitches.forEach { midiDeviceManager.playNoteDirect(it, 0) }
-                            playingPitches = emptySet()
+                            playingNotes.keys.forEach { midiDeviceManager.playNoteDirect(it, 0) }
+                            playingNotes = emptyMap()
                             activeKeys.clear()
                             previousActiveKeys = emptyMap()
 
@@ -348,7 +349,6 @@ internal fun ElyTesiaAppContent(
 
                 val currentMs = currentTimeFractionalMs.toLong()
                 val currentActiveNotes = timeline.activeNotesAt(currentMs)
-                val currentPitches = currentActiveNotes.map { it.pitch }.toSet()
 
                 // Filtrar por mano activa: solo las notas de la mano seleccionada son "activas"
                 val practiceNotes = when (currentHandMode) {
@@ -369,19 +369,34 @@ internal fun ElyTesiaAppContent(
                 }
 
                 if (currentInternalSoundEnabled) {
-                    val newPitches = currentPitches - playingPitches
-                    for (pitch in newPitches) {
-                        val note = currentActiveNotes.firstOrNull { it.pitch == pitch }
-                        midiDeviceManager.playNoteDirect(pitch, note?.velocity ?: 90)
-                    }
+                    val activeNotesByPitch = currentActiveNotes
+                        .groupBy { it.pitch }
+                        .mapValues { (_, notes) -> notes.maxByOrNull { it.startTimeMs } ?: notes.first() }
 
-                    val stoppedPitches = playingPitches - currentPitches
+                    // 1. Apagar notas que finalizaron
+                    val stoppedPitches = playingNotes.keys - activeNotesByPitch.keys
                     for (pitch in stoppedPitches) {
                         midiDeviceManager.playNoteDirect(pitch, 0)
                     }
-                }
 
-                playingPitches = currentPitches
+                    // 2. Iniciar notas nuevas o re-disparar notas repetidas consecutivas en la misma tecla
+                    for ((pitch, activeNote) in activeNotesByPitch) {
+                        val previousNote = playingNotes[pitch]
+                        if (previousNote == null) {
+                            // Nota nueva
+                            midiDeviceManager.playNoteDirect(pitch, activeNote.velocity)
+                        } else if (previousNote != activeNote) {
+                            // Nota repetida consecutiva (ej. Mi-Mi-Mi) -> re-disparo con ataque percusivo
+                            midiDeviceManager.playNoteDirect(pitch, 0)
+                            midiDeviceManager.playNoteDirect(pitch, activeNote.velocity)
+                        }
+                    }
+
+                    playingNotes = activeNotesByPitch
+                } else if (playingNotes.isNotEmpty()) {
+                    playingNotes.keys.forEach { midiDeviceManager.playNoteDirect(it, 0) }
+                    playingNotes = emptyMap()
+                }
             }
         } catch (e: Exception) {
             println("Aviso en bucle de reproducción: ${e.message}")

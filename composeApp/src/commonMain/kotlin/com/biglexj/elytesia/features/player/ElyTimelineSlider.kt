@@ -16,15 +16,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
-import com.biglexj.elytesia.theme.AuroraViolet
-import com.biglexj.elytesia.theme.ElyGreen
 
 /**
  * Deslizador de línea de tiempo continuo de alto rendimiento.
@@ -154,26 +151,16 @@ fun ElyTimelineSlider(
         val progressWidth = (progressFraction * width).coerceIn(0f, width)
 
         if (progressWidth > 0f) {
-            // Gradiente tonal suave de progreso
-            val progressBrush = Brush.horizontalGradient(
-                colors = listOf(
-                    colors.primary.copy(alpha = 0.85f),
-                    AuroraViolet.copy(alpha = 0.95f),
-                    ElyGreen.copy(alpha = 0.95f)
-                ),
-                startX = 0f,
-                endX = width.coerceAtLeast(1f)
-            )
-
+            // Progreso activo con color primario uniforme (sin variaciones de color)
             drawRoundRect(
-                brush = progressBrush,
+                color = colors.primary,
                 topLeft = Offset(0f, trackY),
                 size = Size(progressWidth, trackHeight),
                 cornerRadius = trackRadius
             )
         }
 
-        // 4. Cabezal Scrubber (Píldora brillante indicadora de posición)
+        // 4. Cabezal Scrubber (Píldora indicadora de posición en color primario uniforme)
         val thumbCenterX = progressWidth.coerceIn(thumbWidth / 2f, width - thumbWidth / 2f)
         val thumbLeft = thumbCenterX - (thumbWidth / 2f)
         val thumbTop = (height - thumbHeight) / 2f
@@ -187,17 +174,17 @@ fun ElyTimelineSlider(
             cornerRadius = CornerRadius((thumbWidth + 4f) / 2f, (thumbWidth + 4f) / 2f)
         )
 
-        // Núcleo blanco nítido del cabezal
+        // Núcleo del cabezal en color primario uniforme
         drawRoundRect(
-            color = Color.White,
+            color = colors.primary,
             topLeft = Offset(thumbLeft, thumbTop),
             size = Size(thumbWidth, thumbHeight),
             cornerRadius = thumbRadius
         )
 
-        // Borde fino para alta definición
+        // Borde fino nítido para contraste y alta definición
         drawRoundRect(
-            color = colors.primary,
+            color = Color.White.copy(alpha = 0.85f),
             topLeft = Offset(thumbLeft, thumbTop),
             size = Size(thumbWidth, thumbHeight),
             cornerRadius = thumbRadius,
