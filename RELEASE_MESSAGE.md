@@ -1,12 +1,21 @@
-# 🚀 ¡Nuevo Lanzamiento de Ely-Tesia! — v1.0.8
+# 🚀 Ely-Tesia v1.0.9 — Deslizador Continuo en Canvas, Desenfoque de Movimiento y Renderizado a 144 FPS
 
-¡Nos complace anunciar la versión **v1.0.8** de **Ely-Tesia**! 🎉
+Llega **Ely-Tesia v1.0.9**, una actualización enfocada en la fluidez perceptual absoluta y la optimización del motor de reproducción. Esta versión estrena el nuevo **deslizador de línea de tiempo continuo en Canvas** con avance sub-píxel a 60/144 Hz sin saltos escalonados, el **efecto de estela y desenfoque de movimiento vertical (Motion Trail)** en la cascada de notas del piano roll, la eliminación de pausas del recolector de basura (GC) y la estandarización oficial del pipeline de distribución unificado.
 
-### 📝 Resumen
-Esta actualización soluciona un bloqueo silencioso al inicio (el infame bucle al 95%), optimiza las dimensiones de los modales en móviles y PC, corrige la salida de audio MIDI en teclados físicos y añade el icono oficial de ventana en la barra de escritorio.
+---
 
-### 🌟 Novedades Destacadas
-- 🚀 **Arranque Ultra Estable**: Eliminamos la validación bloqueante de monitores (AWT) que causaba que la aplicación se quedara colgada en el 95% en ciertas PCs. La persistencia de ventana es ahora 100% nativa.
-- 📱 **Modales UI Adaptativos**: El cuadro de *Acerca De* y el *Asistente de Actualizaciones* ahora lucen más limpios en PC (diseño vertical) y no saturan la pantalla en móviles (topes de 80% ancho / 70% alto).
-- 🎹 **Sin Mute de Teclados MIDI**: Tu teclado físico conserva su sonido original sin sufrir silenciados de altavoz al conectarlo por USB.
-- 🖼️ **Iconos y Punteros**: Ventanas con el logo oficial en la barra de tareas e interacción táctil mejorada en los selectores desplegables (puntero de mano).
+### ✨ Novedades destacadas
+
+- 🎛️ **Nuevo Deslizador Continuo en Canvas (ElyTimelineSlider)**: El cursor de la línea de tiempo ahora se dibuja directamente en Canvas con fluidez sub-píxel a 60/144 Hz, eliminando por completo los saltitos discretos, con soporte de arrastre inmediato y visualización de la región de bucle A-B.
+- 🎹 **Estela y Desenfoque de Movimiento (Motion Trail & Head Glow)**: Las notas en el Piano Roll cuentan con un gradiente vertical de velocidad suave y cabeza de impacto luminosa, erradicando el parpadeo estroboscópico retiniano en piezas rápidas como *La Bamba*.
+- ⚡ **Rendimiento Máximo y Cero Congelamientos**: Desacople total de la fase de dibujo (`DrawScope`) respecto a la composición global de Compose, optimización de indexación temporal de notas (O(log N)) y física de partículas directa sin pausas del Garbage Collector.
+- 📦 **Distribución Oficial Estandarizada**: Distribución centrada exclusivamente en el instalador ejecutable unificado `.exe` para Windows y el paquete `.apk` firmado para Android conforme a las directrices del ecosistema.
+
+---
+
+### 💖 Apoyo y comunidad
+
+Si disfrutas aprendiendo y practicando con **Ely-Tesia**, considera apoyar el desarrollo continuo:
+- ☕ **Buy Me a Coffee**: https://buymeacoffee.com/biglexj
+- 💳 **Donaciones directas**: https://www.biglexj.com/donaciones
+- 🐙 **GitHub**: https://github.com/biglexj/Ely-Tesia

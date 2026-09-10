@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,7 +24,7 @@ fun PlaybackControlBar(
     isPlaying: Boolean,
     onPlayToggle: () -> Unit,
     onStop: () -> Unit,
-    currentTimeMs: Long,
+    currentTimeMsProvider: () -> Float,
     durationMs: Long,
     onSeek: (Long) -> Unit,
     speedMultiplier: Float,
@@ -74,13 +73,16 @@ fun PlaybackControlBar(
                 .padding(horizontal = 8.dp, vertical = 2.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            // Slider de Línea de Tiempo compacto
+            // Deslizador continuo de línea de tiempo en Canvas (60/144Hz sub-píxel)
             if (durationMs > 0L) {
-                Slider(
-                    value = currentTimeMs.toFloat().coerceIn(0f, durationMs.toFloat()),
-                    onValueChange = { onSeek(it.toLong()) },
-                    valueRange = 0f..durationMs.toFloat(),
-                    modifier = Modifier.fillMaxWidth().height(14.dp)
+                ElyTimelineSlider(
+                    currentTimeMsProvider = currentTimeMsProvider,
+                    durationMs = durationMs,
+                    onSeek = onSeek,
+                    loopStartMs = loopStartMs,
+                    loopEndMs = loopEndMs,
+                    isCompact = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
@@ -195,13 +197,16 @@ fun PlaybackControlBar(
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Timeline slider
+            // Deslizador continuo de línea de tiempo en Canvas (60/144Hz sub-píxel)
             if (durationMs > 0L) {
-                Slider(
-                    value = currentTimeMs.toFloat().coerceIn(0f, durationMs.toFloat()),
-                    onValueChange = { onSeek(it.toLong()) },
-                    valueRange = 0f..durationMs.toFloat(),
-                    modifier = Modifier.fillMaxWidth().height(18.dp)
+                ElyTimelineSlider(
+                    currentTimeMsProvider = currentTimeMsProvider,
+                    durationMs = durationMs,
+                    onSeek = onSeek,
+                    loopStartMs = loopStartMs,
+                    loopEndMs = loopEndMs,
+                    isCompact = false,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
@@ -502,3 +507,65 @@ private fun formatMs(ms: Long): String {
     val secStr = if (sec < 10) "0$sec" else "$sec"
     return "$min:$secStr"
 }
+
+
+@Composable
+fun PlaybackControlBar(
+    isPlaying: Boolean,
+    onPlayToggle: () -> Unit,
+    onStop: () -> Unit,
+    currentTimeMs: Long,
+    durationMs: Long,
+    onSeek: (Long) -> Unit,
+    speedMultiplier: Float,
+    onSpeedChange: (Float) -> Unit,
+    baseBpm: Double = 120.0,
+    transposeSemitones: Int = 0,
+    onTransposeChange: (Int) -> Unit = {},
+    metronomeEnabled: Boolean,
+    onMetronomeToggle: () -> Unit,
+    waitMode: Boolean,
+    onWaitModeToggle: () -> Unit,
+    loopEnabled: Boolean,
+    onLoopToggle: () -> Unit,
+    handMode: HandMode = HandMode.AMBAS,
+    onCycleHandMode: () -> Unit = {},
+    noteLabelMode: NoteLabelMode,
+    onCycleNoteLabelMode: () -> Unit,
+    loopStartMs: Long? = null,
+    loopEndMs: Long? = null,
+    onSetLoopStart: () -> Unit = {},
+    onSetLoopEnd: () -> Unit = {},
+    onClearLoopAB: () -> Unit = {},
+    isCompactHeight: Boolean = false,
+    modifier: Modifier = Modifier
+) = PlaybackControlBar(
+    isPlaying = isPlaying,
+    onPlayToggle = onPlayToggle,
+    onStop = onStop,
+    currentTimeMsProvider = { currentTimeMs.toFloat() },
+    durationMs = durationMs,
+    onSeek = onSeek,
+    speedMultiplier = speedMultiplier,
+    onSpeedChange = onSpeedChange,
+    baseBpm = baseBpm,
+    transposeSemitones = transposeSemitones,
+    onTransposeChange = onTransposeChange,
+    metronomeEnabled = metronomeEnabled,
+    onMetronomeToggle = onMetronomeToggle,
+    waitMode = waitMode,
+    onWaitModeToggle = onWaitModeToggle,
+    loopEnabled = loopEnabled,
+    onLoopToggle = onLoopToggle,
+    handMode = handMode,
+    onCycleHandMode = onCycleHandMode,
+    noteLabelMode = noteLabelMode,
+    onCycleNoteLabelMode = onCycleNoteLabelMode,
+    loopStartMs = loopStartMs,
+    loopEndMs = loopEndMs,
+    onSetLoopStart = onSetLoopStart,
+    onSetLoopEnd = onSetLoopEnd,
+    onClearLoopAB = onClearLoopAB,
+    isCompactHeight = isCompactHeight,
+    modifier = modifier
+)

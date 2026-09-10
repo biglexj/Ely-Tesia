@@ -90,6 +90,7 @@ internal fun ElyTesiaAppContent(
     var loadedSongName by rememberSaveable { mutableStateOf<String?>(demoSongs.firstOrNull()?.name) }
     var loadedSong by remember { mutableStateOf<Song?>(demoSongs.firstOrNull()) }
     var currentTimeMs by remember { mutableStateOf(0L) }
+    var currentTimeFractionalMs by remember { mutableFloatStateOf(0f) }
     var isPlaying by remember { mutableStateOf(false) }
 
     var toastMessage by remember { mutableStateOf<String?>(null) }
@@ -117,6 +118,7 @@ internal fun ElyTesiaAppContent(
                 loadedSong = song
                 loadedSongName = song.name
                 currentTimeMs = 0L
+                currentTimeFractionalMs = 0f
                 isPlaying = false
                 activeSidebar = null
             }
@@ -132,6 +134,7 @@ internal fun ElyTesiaAppContent(
             loadedSong = s
             loadedSongName = s.name
             currentTimeMs = 0L
+            currentTimeFractionalMs = 0f
             isPlaying = false
             onImportedSongConsumed?.invoke()
         }
@@ -169,6 +172,18 @@ internal fun ElyTesiaAppContent(
     val activeKeys = remember { mutableStateMapOf<Int, Int>() }
     val userActiveKeys = remember { mutableStateListOf<Int>() }
     val wrongUserKeys = remember { mutableStateListOf<Int>() }
+
+    // Estos valores pueden cambiar mientras el reloj sigue activo. Se actualizan sin
+    // reiniciar la corrutina de reproducción en cada ajuste de práctica.
+    val currentWaitMode by rememberUpdatedState(waitMode)
+    val currentLoopEnabled by rememberUpdatedState(loopEnabled)
+    val currentLoopStartMs by rememberUpdatedState(loopStartMs)
+    val currentLoopEndMs by rememberUpdatedState(loopEndMs)
+    val currentLoopCountdown by rememberUpdatedState(loopCountdown)
+    val currentLoopWaitingForMidi by rememberUpdatedState(isLoopWaitingForMidi)
+    val currentSelectedDevice by rememberUpdatedState(selectedDevice)
+    val currentHandMode by rememberUpdatedState(handMode)
+    val currentInternalSoundEnabled by rememberUpdatedState(internalSoundEnabled)
 
     // Persistencia automática de estado: guarda en disco cuando cambia cualquier campo relevante
     LaunchedEffect(localStorage) {
@@ -260,33 +275,44 @@ internal fun ElyTesiaAppContent(
     LaunchedEffect(isPlaying, effectiveSong, speedMultiplier) {
         if (!isPlaying || effectiveSong == null) return@LaunchedEffect
         val song = effectiveSong
+        val timeline = PlaybackLogic.TimelineIndex(song.notes)
 
         var lastTime = withFrameNanos { it }
         var playingPitches = setOf<Int>()
+        var previousActiveKeys = emptyMap<Int, Int>()
 
         try {
             while (isPlaying) {
                 val now = withFrameNanos { it }
-                val deltaMs = ((now - lastTime) / 1_000_000f * speedMultiplier).toLong()
+                val deltaMs = ((now - lastTime) / 1_000_000.0 * speedMultiplier).toFloat()
                 lastTime = now
 
-                if (!waitMode && !isLoopWaitingForMidi && loopCountdown == null) {
-                    currentTimeMs += deltaMs
+                if (!currentWaitMode && !currentLoopWaitingForMidi && currentLoopCountdown == null) {
+                    currentTimeFractionalMs += deltaMs
+                    val currentMs = currentTimeFractionalMs.toLong()
+                    if (currentMs != currentTimeMs) {
+                        currentTimeMs = currentMs
+                    }
 
                     // Verificación de Bucle de Sección A-B activa
-                    if (loopEndMs != null && currentTimeMs >= loopEndMs!!) {
-                        val targetStart = loopStartMs ?: 0L
-                        currentTimeMs = targetStart
+                    if (currentLoopEndMs != null && currentTimeFractionalMs >= currentLoopEndMs!!) {
+                        val targetStart = (currentLoopStartMs ?: 0L).toFloat()
+                        currentTimeFractionalMs = targetStart
+                        currentTimeMs = targetStart.toLong()
                         playingPitches.forEach { midiDeviceManager.playNoteDirect(it, 0) }
                         playingPitches = emptySet()
                         activeKeys.clear()
+                        previousActiveKeys = emptyMap()
                         lastTime = withFrameNanos { it }
-                    } else if (currentTimeMs >= song.durationMs) {
-                        if (loopEnabled) {
-                            currentTimeMs = loopStartMs ?: 0L
+                    } else if (currentTimeFractionalMs >= song.durationMs) {
+                        if (currentLoopEnabled) {
+                            val targetStart = (currentLoopStartMs ?: 0L).toFloat()
+                            currentTimeFractionalMs = targetStart
+                            currentTimeMs = targetStart.toLong()
                             playingPitches.forEach { midiDeviceManager.playNoteDirect(it, 0) }
                             playingPitches = emptySet()
                             activeKeys.clear()
+                            previousActiveKeys = emptyMap()
 
                             // Conteo regresivo (3, 2, 1) antes de reiniciar bucle
                             loopCountdown = 3
@@ -298,30 +324,34 @@ internal fun ElyTesiaAppContent(
                             loopCountdown = null
 
                             // Si hay teclado MIDI conectado, entrar en modo espera hasta tocar primera tecla
-                            if (selectedDevice.isNotBlank()) {
+                            if (currentSelectedDevice.isNotBlank()) {
                                 isLoopWaitingForMidi = true
-                                while (isLoopWaitingForMidi && isPlaying && loopEnabled) {
+                                while (currentLoopWaitingForMidi && isPlaying && currentLoopEnabled) {
                                     delay(50)
                                 }
                             }
 
                             // Sincronizar el reloj de fotogramas justo cuando arranca la canción
                             lastTime = withFrameNanos { it }
-                            currentTimeMs = loopStartMs ?: 0L
+                            currentTimeFractionalMs = targetStart
+                            currentTimeMs = targetStart.toLong()
                         } else {
                             isPlaying = false
+                            currentTimeFractionalMs = 0f
                             currentTimeMs = 0L
                             activeKeys.clear()
+                            previousActiveKeys = emptyMap()
                             break
                         }
                     }
                 }
 
-                val currentActiveNotes = PlaybackLogic.activeNotesAt(song, currentTimeMs)
+                val currentMs = currentTimeFractionalMs.toLong()
+                val currentActiveNotes = timeline.activeNotesAt(currentMs)
                 val currentPitches = currentActiveNotes.map { it.pitch }.toSet()
 
                 // Filtrar por mano activa: solo las notas de la mano seleccionada son "activas"
-                val practiceNotes = when (handMode) {
+                val practiceNotes = when (currentHandMode) {
                     HandMode.MANO_IZQUIERDA -> currentActiveNotes.filter {
                         com.biglexj.elytesia.theme.HandColorResolver.isLeftHand(it.pitch, it.track)
                     }
@@ -331,12 +361,14 @@ internal fun ElyTesiaAppContent(
                     HandMode.AMBAS -> currentActiveNotes
                 }
 
-                activeKeys.clear()
-                practiceNotes.forEach { note ->
-                    activeKeys[note.pitch] = note.track
+                val nextActiveKeys = practiceNotes.associate { note -> note.pitch to note.track }
+                if (nextActiveKeys != previousActiveKeys) {
+                    activeKeys.clear()
+                    activeKeys.putAll(nextActiveKeys)
+                    previousActiveKeys = nextActiveKeys
                 }
 
-                if (internalSoundEnabled) {
+                if (currentInternalSoundEnabled) {
                     val newPitches = currentPitches - playingPitches
                     for (pitch in newPitches) {
                         val note = currentActiveNotes.firstOrNull { it.pitch == pitch }
@@ -350,7 +382,6 @@ internal fun ElyTesiaAppContent(
                 }
 
                 playingPitches = currentPitches
-                delay(16)
             }
         } catch (e: Exception) {
             println("Aviso en bucle de reproducción: ${e.message}")
@@ -424,7 +455,7 @@ internal fun ElyTesiaAppContent(
                         // Top Header Control Bar
                         TopHeaderControlBar(
                             loadedSong = loadedSong,
-                            currentTimeMs = currentTimeMs,
+                            currentTimeMsProvider = { currentTimeMs },
                             activeTheme = activeTheme,
                             isSidebarOpen = activeSidebar != null,
                             onToggleSidebar = {
@@ -440,7 +471,7 @@ internal fun ElyTesiaAppContent(
                                 Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                                     PianoRollCanvas(
                                         notes = effectiveSong?.notes.orEmpty(),
-                                        currentTimeMs = currentTimeMs,
+                                        currentTimeMsProvider = { currentTimeFractionalMs },
                                         activeKeys = activeKeys,
                                         minPitch = minPitch,
                                         maxPitch = maxPitch,
@@ -528,14 +559,18 @@ internal fun ElyTesiaAppContent(
                             onStop = {
                                 isPlaying = false
                                 currentTimeMs = 0L
+                                currentTimeFractionalMs = 0f
                                 loopCountdown = null
                                 isLoopWaitingForMidi = false
                                 activeKeys.clear()
                                 midiDeviceManager.stopAllNotes()
                             },
-                            currentTimeMs = currentTimeMs,
+                            currentTimeMsProvider = { currentTimeFractionalMs },
                             durationMs = loadedSong?.durationMs ?: 0L,
-                            onSeek = { currentTimeMs = it },
+                            onSeek = { 
+                                currentTimeMs = it
+                                currentTimeFractionalMs = it.toFloat()
+                            },
                             speedMultiplier = speedMultiplier,
                             onSpeedChange = { speedMultiplier = it },
                             baseBpm = loadedSong?.bpm ?: 120.0,

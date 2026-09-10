@@ -28,4 +28,23 @@ class PlaybackLogicTest {
     fun visibleNoteUsesMostRecentTrackAssignment() {
         assertEquals(later, PlaybackLogic.visibleNotesByPitch(listOf(earlier, later))[60])
     }
+
+    @Test
+    fun timelineIndexKeepsLongNotesVisibleAfterTheirStart() {
+        val longNote = NoteEvent(48, 0L, 5_000L, 80, 0)
+        val upcomingNote = NoteEvent(72, 3_000L, 200L, 80, 1)
+        val index = PlaybackLogic.TimelineIndex(listOf(upcomingNote, longNote))
+
+        assertEquals(listOf(longNote), index.activeNotesAt(2_500L))
+        assertEquals(listOf(longNote, upcomingNote), index.visibleNotesAt(2_500L, 1_000L))
+    }
+
+    @Test
+    fun timelineIndexDoesNotReturnNotesOutsideVisibleWindow() {
+        val beforeWindow = NoteEvent(48, 0L, 500L, 80, 0)
+        val afterWindow = NoteEvent(72, 4_000L, 200L, 80, 1)
+        val index = PlaybackLogic.TimelineIndex(listOf(beforeWindow, afterWindow))
+
+        assertEquals(emptyList(), index.visibleNotesAt(1_000L, 1_000L))
+    }
 }

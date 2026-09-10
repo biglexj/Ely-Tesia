@@ -1,438 +1,73 @@
-# Roadmap de Ely-Tesia
+# 🎯 Ely-Tesia — Roadmap
 
-Este documento organiza la evolución prevista de Ely-Tesia. No representa una
-promesa de fechas ni obliga a implementar inmediatamente cada idea. Su objetivo
-es conservar propuestas, discutirlas y priorizarlas antes de convertirlas en
-cambios de código.
+Plan de trabajo, objetivos de producto y hoja de ruta estratégica del proyecto.
 
-## Estados
-![alt text](image.png)
-- **En desarrollo:** existe trabajo activo y puede cambiar.
-- **Planificado:** aprobado para una versión futura, pero todavía sin comenzar.
-- **En evaluación:** la idea parece útil, aunque falta definir diseño o alcance.
-- **Idea:** propuesta registrada sin compromiso de implementación.
-- **Completado:** disponible en una versión publicada o candidata.
+> **Regla del roadmap:** El Roadmap reúne la visión general del producto y las ideas por estado. Las tareas activas de compilación, pruebas y fases técnicas se gestionan en los procesos activos de `process/active/`. Una vez validada y completada una tarea, pasa a ROADMAP.md dentro de la sección **Completado** (`- [x] **vX.X.X**`).
 
 ---
 
-## Por implementar
+## 🔴 Pendientes activos
 
-### Próxima actualización — Validación y pulido Android
-
-Estado: **Planificado**
-
-- Pruebas adicionales en distintos dispositivos Android reales.
-- Ajustes de latencia y tamaño de buffer por fabricante.
-
-### Clasificación Automática de Dificultad para Canciones Importadas
-
-Estado: **En evaluación**
-
-Al importar un archivo MIDI el usuario no recibe ninguna etiqueta de dificultad (la canción aparece en la sección "📂 Importadas" sin clasificar). Se propone un motor `DifficultyAnalyzer.kt` que calcule automáticamente la dificultad basándose en múltiples métricas extraídas del modelo `Song`:
-
-**Métricas propuestas:**
-
-| Factor | Criterio sugerido | Peso |
-|---|---|---|
-| **BPM** | < 80 → Fácil · 80–120 → Intermedio · > 120 → Avanzado | Alto |
-| **Densidad de notas** | Notas por segundo promedio | Alto |
-| **Polifonía simultánea** | Máximo de notas sonando al mismo tiempo (acordes) | Medio |
-| **Rango tonal** | Distancia en semitonos entre la nota más grave y la más aguda | Medio |
-| **Varianza rítmica** | Presencia de figuras cortas (semicorcheas, fusas) vs. redondas | Bajo |
-| **Duración total** | Canciones largas (> 3 min) suman dificultad | Bajo |
-
-**Resultado final:** suma ponderada → `FACIL` / `INTERMEDIO` / `AVANZADO`.
-
-**Pendiente de definir:** los umbrales exactos por métrica (requieren calibración con el catálogo demo existente como referencia dorada).
-
-### Práctica por secciones
-
-Estado: **Planificado**
-
-- Selección de fragmentos A-B desde la barra de progreso.
-- Repetición continua de una sección.
-- Cuenta previa antes de cada repetición.
-- Guardado de fragmentos difíciles por canción.
-
-### Manos, pistas y canales
-
-Estado: **Planificado**
-
-- Selector de pistas y canales MIDI.
-- Silenciar, reproducir en solitario u ocultar una pista.
-- Modo de espera aplicado solamente a una mano.
-- Volumen individual por pista.
-- Asignación manual de pistas cuando el archivo no separa las manos.
-
-### Barra de progreso avanzada
-
-Estado: **Planificado**
-
-- Pulsar o arrastrar para desplazarse por la canción.
-- Tiempo actual y duración total.
-- Marcadores de sección.
-- Indicadores de cambios de tempo y compás.
-
-### Nuevas plataformas
-
-Estado: **Planificado**
-
-La interfaz, los modelos, el parser MIDI, la biblioteca y gran parte de la
-lógica son compartidos mediante Kotlin y Compose Multiplatform. Cada nuevo
-sistema todavía requiere adaptadores propios para MIDI, audio, archivos,
-persistencia, firma y empaquetado.
-
-#### Linux
-
-Prioridad: **Alta**
-
-- Crear una entrada de aplicación y distribución JVM para Linux.
-- Verificar MIDI mediante ALSA, dispositivos USB y Bluetooth MIDI.
-- Probar el sintetizador y las salidas de audio en PipeWire y PulseAudio.
-- Adaptar los selectores de archivos y las rutas de datos a XDG.
-- Generar paquetes `.deb` para Debian, Ubuntu y derivados.
-- Generar paquetes `.rpm` para Fedora, openSUSE y derivados.
-- Generar un AppImage `x86_64` autocontenido como distribución principal.
-- Evaluar AppImage para ARM64 cuando exista infraestructura de pruebas.
-- Incluir archivo `.desktop`, icono, categorías y tipos MIME para `.mid` y `.midi`.
-- Probar en Arch Linux y una distribución basada en Arch.
-
-##### Arch Linux y Pacman
-
-- Mantener inicialmente una receta `PKGBUILD` dentro del repositorio.
-- Permitir que los usuarios construyan e instalen mediante `makepkg -si`.
-- Evaluar publicación en AUR después de estabilizar el paquete.
-- No depender de entrar inmediatamente en los repositorios oficiales de Arch.
-- Aceptar colaboradores que quieran mantener el `PKGBUILD` y validar nuevas versiones.
-
-##### Estrategia de compilación Linux
-
-- Construir los paquetes en una máquina o runner Linux.
-- Añadir un script `build-release-linux.sh` equivalente al script PowerShell.
-- Incorporar un workflow de GitHub Actions para `.deb`, `.rpm` y AppImage.
-- Publicar hashes SHA-256 junto a cada artefacto.
-- Probar el AppImage al menos en Debian/Ubuntu, Fedora y Arch/Manjaro.
-
-#### macOS
-
-Prioridad: **Media**
-
-- Crear paquetes `.dmg` y `.pkg` desde un equipo o runner macOS.
-- Probar dispositivos MIDI mediante CoreMIDI y los adaptadores JVM disponibles.
-- Adaptar audio, selector de archivos y directorios de datos de usuario.
-- Integrar el icono en formato `.icns`.
-- Firmar con Developer ID y completar notarización para evitar advertencias de Gatekeeper.
-- Probar Intel y Apple Silicon.
-- Evaluar un binario universal cuando el proceso de build sea estable.
-
-#### iOS y iPadOS
-
-Prioridad: **Media/Baja**
-
-- Añadir targets iOS a Kotlin Multiplatform y un proyecto contenedor de Xcode.
-- Reutilizar la UI Compose y adaptar la navegación a iPhone y iPad.
-- Implementar MIDI mediante CoreMIDI, incluyendo dispositivos USB y Bluetooth.
-- Implementar audio de baja latencia mediante AVAudioEngine u otra API nativa.
-- Usar el selector de documentos de iOS para importar y exportar MIDI.
-- Adaptar persistencia, rotación, multitarea y sesiones de audio.
-- Probar teclados conectados mediante adaptadores USB-C/Lightning.
-- Configurar firma, perfiles, TestFlight y distribución en App Store.
-
-#### Matriz prevista de artefactos
-
-| Plataforma | Artefactos principales | Entorno de build |
-|---|---|---|
-| Windows | EXE, MSI y MSIX | Windows + JDK 17 + WiX + Windows SDK |
-| Android | APK y AAB | JDK 17 + Android SDK |
-| Linux universal | AppImage | Linux x86_64 |
-| Debian/Ubuntu | DEB | Linux |
-| Fedora/openSUSE | RPM | Linux |
-| Arch Linux | PKGBUILD/AUR | Arch Linux |
-| macOS | DMG y PKG | macOS + JDK 17 |
-| iOS/iPadOS | IPA/TestFlight | macOS + Xcode |
-
-### Distribución
-
-Estado: **Planificado**
-
-- Publicación futura mediante Microsoft Store y WinGet.
-- APK firmado para distribución directa.
-- Android App Bundle para Google Play.
-- Firma de código para Windows.
-- Canal estable y canal de pruebas.
-- Automatización de builds y releases mediante GitHub Actions.
-- Publicación automática de hashes SHA-256.
-- AppImage, DEB, RPM y receta PKGBUILD/AUR para Linux.
-- Paquetes DMG/PKG firmados y notarizados para macOS.
-- TestFlight y App Store para iOS/iPadOS.
+- [ ] **Clasificación Automática de Dificultad para Canciones Importadas**: Motor `DifficultyAnalyzer.kt` para evaluar y categorizar archivos MIDI importados (`FACIL`, `INTERMEDIO`, `AVANZADO`) basándose en BPM, densidad de notas por segundo, polifonía máxima, rango tonal y varianza rítmica.
+- [ ] **Gestión Fina de Pistas y Canales MIDI**: Selector visual para silenciar, reproducir en solitario u ocultar pistas específicas, con asignación manual de manos y control de volumen individual por pista.
+- [ ] **Validación y Pruebas Físicas en Android**: Comprobación en múltiples dispositivos Android reales por ABI, calibración de latencia táctil y ajuste fino de buffers de audio por fabricante.
+- [ ] **Empaquetado y Distribución en Linux**: AppImage autocontenido x86_64 como distribución principal, paquetes `.deb` / `.rpm` y soporte de backend de audio PipeWire/PulseAudio y ALSA MIDI.
 
 ---
 
-## Ideas y conceptos
+## 🟡 Intermedio (Prioridad Media/Baja)
 
-> Propuestas registradas sin compromiso de implementación. Pueden avanzar o descartarse según prioridad futura.
-
-### Sistema de colores y temas visuales
-
-Estado: **Completado en 1.0.5**
-
-Separar la lógica de colores del código de UI para que el usuario pueda
-personalizar la paleta de la aplicación sin tocar código.
-
-- Colores independientes configurables para mano izquierda y mano derecha en el teclado virtual y en el piano roll.
-- Paleta de colores por pista MIDI configurable desde la interfaz.
-- Temas predefinidos seleccionables (Aurora, Clásico, Alto Contraste, etc.).
-- Persistencia de la configuración de colores en la biblioteca de preferencias.
-- Exportación e importación de temas personalizados.
-- Modo alto contraste para accesibilidad.
-
-### Rediseño visual para Android — Material Expressive
-
-Estado: **Completado parcialmente en 1.0.5**
-
-La interfaz de Android comparte actualmente el mismo diseño que Desktop. Para
-Android existe una oportunidad de aprovechar las APIs nativas de Material 3 /
-Material Expressive para una experiencia mucho más rica y nativa del ecosistema.
-
-- Migrar los componentes de Android a Material 3 con Motion y Shape Tokens.
-- Adoptar Material Expressive: ondas de tinta, transiciones de contenedor y
-  morfología de formas animadas al tocar teclas o abrir secciones.
-- Efectos visuales por toque: ripple extendido y retroalimentación háptica en
-  el teclado virtual.
-- Animaciones de entrada y salida en sidebars y modales con MotionLayout o la
-  API de animación de Compose.
-- Superficies tintadas dinámicas (Dynamic Color) tomando el color dominante del
-  tema activo.
-- Barra de navegación y estado adaptadas al tema oscuro de Ely-Tesia.
-
-### Herramientas de aprendizaje
-
-Estado: **En evaluación**
-
-- Precisión de notas y ritmo.
-- Notas correctas, incorrectas, adelantadas y atrasadas.
-- Historial de sesiones de práctica.
-- BPM máximo alcanzado por canción o fragmento.
-- Aumento automático de velocidad tras completar una repetición.
-- Objetivos diarios y tiempo total practicado.
-
-### Compatibilidad MIDI avanzada
-
-Estado: **En evaluación**
-
-- Cambios de tempo durante una canción.
-- Indicaciones de compás.
-- Program Change y bancos General MIDI.
-- Volumen y panorámica por canal.
-- Pedales sostenuto y una corda.
-- Pitch bend y rueda de modulación.
-- Aftertouch y presión polifónica.
-- Marcadores, letras y nombres de pista.
-- Archivos MIDI tipo 0, 1 y secuencias múltiples.
-- Evaluación futura de MIDI 2.0 y MPE.
-
-### Audio avanzado
-
-Estado: **En evaluación**
-
-- Soporte de SoundFont.
-- Piano muestreado de mayor calidad.
-- Control de volumen maestro y por pista.
-- Reverb opcional y limitador configurable.
-- Medición y ajuste automático de latencia.
-- Motor Oboe para optimizar Android en dispositivos que lo necesiten.
-- Soporte de plugins VST3 (Windows/Linux/macOS) mediante puente JNI nativo.
-
-### Experiencia móvil
-
-Estado: **En evaluación**
-
-- Modo horizontal dedicado para piano roll.
-- Desplazamiento del teclado por octavas.
-- Rango visible de 24, 36, 49, 61 u 88 teclas.
-- Controles compactos durante la reproducción.
-- Compatibilidad con tabletas y pantallas plegables.
-- Mantener la pantalla activa durante una sesión.
-
-### Biblioteca y edición
-
-Estado: **Idea**
-
-- Carpetas, etiquetas y favoritos.
-- Búsqueda por nombre, BPM, duración o tonalidad.
-- Edición sencilla de notas grabadas.
-- Recorte de silencio al inicio y al final.
-- Cuantización opcional.
-- Duplicar, dividir o unir grabaciones.
-- Importar y exportar colecciones.
-- Copia de seguridad y restauración.
-
-### Biblioteca comunitaria de archivos MIDI
-
-Estado: **Idea**
-
-Crear una biblioteca opcional para compartir archivos MIDI entre usuarios de
-Ely-Tesia con fines personales, educativos y no comerciales.
-
-#### Propuesta técnica
-
-Supabase es la primera opción a evaluar (Auth, PostgreSQL, Storage, RLS y Edge Functions).
-La aplicación nunca debe contener una `service key`. Todas las tablas estarán
-protegidas mediante políticas RLS; cada usuario solo podrá modificar o eliminar
-sus propias subidas.
-
-#### Información de cada publicación
-
-- Título, compositor, arreglista, usuario que sube, descripción y etiquetas.
-- BPM, duración, número de pistas y canales.
-- Nivel de dificultad aproximado.
-- Licencia seleccionada, fuente original y declaración de autoría.
-- Estado de moderación y hash SHA-256 para detectar duplicados.
-
-#### Licencias permitidas
-
-- Obra original del usuario, permitida para uso personal y no comercial.
-- CC BY-NC 4.0 / CC BY-NC-SA 4.0.
-- CC0 o dominio público verificable.
-- Archivo compartido con permiso expreso del autor o titular.
-
-No se ofrecerá una opción genérica como "encontrado en Internet".
-
-#### Reglas de publicación
-
-- Uso exclusivamente personal, educativo y no comercial.
-- Confirmación de autoría o permiso suficiente antes de subir.
-- Prohibición de vender archivos descargados desde la plataforma.
-- Sistema de reporte y procedimiento de retirada con posibilidad de apelación.
-
-#### Decisiones pendientes
-
-- ¿Pública o requiere sesión para descargar?
-- ¿Quién modera y resuelve reclamaciones?
-- Revisar términos legales antes de abrir subidas públicas.
-- Estimar almacenamiento, ancho de banda y límites del plan de Supabase.
-
-### Ideas abiertas
-
-Estado: **Idea**
-
-- Modo concierto sin paneles visibles.
-- Captura de video del piano roll.
-- Compartir una interpretación como imagen o video.
-- Integración opcional con partituras MusicXML.
-- Detección de acordes y tonalidad.
-- Generación de ejercicios a partir de una canción.
-- Atajos de teclado configurables.
-- Control mediante pedales o botones MIDI asignables.
+- [ ] **Soporte de Plataforma macOS**: Paquetes `.dmg` y `.pkg` firmados y notarizados, con integración de CoreMIDI nativo y compatibilidad universal para Apple Silicon e Intel.
+- [ ] **Soporte de Plataforma iOS / iPadOS**: Target Kotlin Multiplatform con backend de audio de baja latencia (AVAudioEngine) y selector de documentos adaptado a iPad y iPhone.
+- [ ] **Integración con Ecosistema Aurora Synapse**: Protocolo de interconexión local para sincronizar prácticas, logros y banco de archivos MIDI compartidos en red local (`aurora-synapse://elytesia/`).
+- [ ] **Grabación y Exportación de Interpretaciones**: Grabador MIDI integrado para registrar sesiones de práctica del usuario, evaluar precisión histórica y exportar a formato `.mid`.
 
 ---
 
-## Completado
+## ⚪ Descartado / En Pausa
 
-### Versión 1.0.0
-
-- Visualizador MIDI y piano roll.
-- Teclado virtual interactivo.
-- Importación, entrada MIDI y exportación de grabaciones en Windows.
-- Importación y exportación MIDI mediante el selector nativo de Android.
-- Entrada MIDI Android mediante USB/OTG y Bluetooth.
-- Sintetizador Android de baja latencia.
-- Pedal sustain CC64 en entrada, grabación, reproducción y exportación.
-- Sintetizador interno y selección de salida de audio en Windows.
-- Biblioteca y preferencias persistentes.
-- Grabación de notas, velocidad y duración.
-- Cuenta previa configurable.
-- Modo de espera, metrónomo, control de BPM, reinicio y bucle.
-- Interfaz de escritorio y composición responsive para teléfonos.
-- Instalador MSI y APK de prueba.
-
-### Versión 1.0.1
-
-- Sincronización temporal exacta entre barras y teclado.
-- Colores por pista conservados en barras, partículas y teclas.
-- Sostenidos y bemoles identificados en rosa.
-- Evaluación de notas incorrectas en ámbar con tolerancia temporal.
-- Retención del resultado y color durante toda la pulsación física.
-- Resolución de tonos simultáneos compartidos por varias pistas.
-- Corrección del sintetizador virtual y salida de audio de Windows.
-- Persistencia y migración segura de la biblioteca entre actualizaciones.
-- Empaquetado MSIX para Windows.
-
-### Versión 1.0.2
-
-- Banco de instrumentos inicial (Piano Acústico, Piano Eléctrico, Órgano, Sintetizador Pad, Clavecín, Flauta y Bajo Sintetizado).
-- Correcciones de diseño visual en selectores y componentes de control.
-- Envío automático de "Local Control: OFF" para silenciar bocinas internas de teclados físicos conectados.
-- Soporte para audio estéreo real de 16 bits en Little Endian para compatibilidad con auriculares Bluetooth/USB.
-
-### Versión 1.0.5
-
-- APK y AAB Android firmados con una identidad permanente.
-- Versionado unificado y validación automática de firma e identidad.
-- Punto de composición `App.kt` pequeño y estructura por `app`, `core`, `feature` y `platform`.
-- Lógica determinista del reproductor separada de Compose y cubierta por pruebas.
-- Barra de progreso interactiva con tiempo actual y duración.
-- Acceso a Instrumentos en portrait y layout compacto para teléfonos horizontales.
-- Pantalla activa durante reproducción y grabación en Android.
-- Mensajes visibles ante errores de dispositivos MIDI y audio.
-- Temas comunitarios JSON importables y exportables con validación y persistencia.
-- Temas integrados Aurora, Clásico y Alto Contraste.
-- Tokens para manos, blancas, negras/bemoles, pulsación, errores, estelas y partículas.
-- Material 3, movimiento expresivo y Dynamic Color opcional en Android 12+.
-- Zoom multitáctil del teclado virtual en pasos de octava, centrado y limitado por el rango mapeado.
-- Sincronización del rango visible entre teclado y piano roll durante el gesto de pellizco.
-
-### Versión 1.0.6
-
-- Estandarización modular de la arquitectura del proyecto alineada estrictamente a `folder_structure.md`.
-- Optimización móvil táctil para orientación horizontal (landscape) con barra compacta en 1 sola fila y reducción de teclado a 95.dp.
-- Persistencia total de canción cargada y estados de reproducción entre rotaciones de pantalla (`rememberSaveable`).
-- Rediseño de controles de BPM y Transposición con botones uniformes y diálogos modales emergentes ergonómicos (`BpmAdjusterDialog` y `TransposeAdjusterDialog`).
-- Iconos adaptativos nativos Android de 2 capas (`mipmap-anydpi-v26/ic_launcher.xml` e `ic_launcher_round.xml`) con fondo sólido `#0F172A` y sin discos blancos.
-- Restauración y visibilidad permanente del botón para importar archivos MIDI.
-
-### Versión 1.0.7
-
-- **Modo Práctica por Mano**: Ejercitación aislada e independiente de mano izquierda (notas graves), mano derecha (notas agudas) o ambas manos simultáneamente (🎹 / 🫲 / 🫱).
-- **Persistencia Automática de Canciones Importadas**: Almacenamiento local persistente (`state.txt`) de canciones añadidas por el usuario entre inicios de aplicación.
-- **Visualización Diferenciada por Mano**: Motor de temas dinámicos con diferenciación tonal para la mano izquierda (color secundario) y derecha (color primario).
-- **Práctica por Secciones (Bucle A-B)**: Marcado con notación intuitiva (`📍 A: Inicio` / `📌 B: Fin`) para la repetición continua de fragmentos de la canción.
-- **Optimizaciones de UI y Navegación Táctil**: Botón de importación MIDI de ancho completo (`fillMaxWidth`), barra lateral scrolleable con pie de página fijado abajo en modo vertical, y chips de dificultad scrolleables sin saltos de línea.
-- **Estandarización de Templates del Ecosistema**: Sincronización completa de reglas locales (`.agents/rules/`) alineadas a `D:\Proyectos\biglexj\Scripts\templates`.
+- ⏸️ **Single-Instance Lock (Instancia Única)**: Descartado por regla de arquitectura (`desktop_app_standards.md`). Ely-Tesia permite deliberadamente abrir múltiples instancias independientes para comparar o practicar diferentes archivos MIDI a la vez.
+- ⏸️ **Distribución MSI / MSIX en Windows**: Descartado de los releases oficiales en favor del instalador ejecutable unificado `.exe` (`Docs/global/releases/web-release-message-standard.md`) con compatibilidad WinGet e instalación silenciosa/pasiva.
+- ⏸️ **Modo Online Obligatorio / Cuentas en la Nube**: Descartado en favor de una experiencia 100% offline, local, privada y sin telemetría intrusiva.
 
 ---
 
-## Criterios para priorizar
+## 🟢 Completado
 
-Antes de aprobar una función se valorará:
+- [x] **v1.0.9** (2026-09-10)
+  - Deslizador de línea de tiempo continuo en Canvas (`ElyTimelineSlider`): renderizado sub-píxel a 60/144 Hz con cero recomposiciones, respuesta táctil/arrastre inmediata y visualización del bucle A-B.
+  - Estela y desenfoque de movimiento vertical (Motion Trail & Head Glow) en `PianoRollCanvas`: gradiente de velocidad difuminado y cabeza de impacto luminosa que eliminan el judder óptico estroboscópico.
+  - Aislamiento de la fase de dibujo (`DrawScope`) en cascada y partículas sin mutaciones pesadas ni pausas del Garbage Collector.
+  - Optimización del motor de reproducción con indexación temporal binaria de notas (O(log N)) y eliminación del doble retraso.
+  - Pipeline de distribución oficial estandarizado conforme a Core-Docs (instalador `.exe` unificado en Windows y paquete `.apk` firmado en Android).
 
-1. Utilidad real para practicar, visualizar, grabar o aprender.
-2. Cantidad de usuarios y plataformas beneficiadas.
-3. Complejidad de uso y espacio que ocupa en la interfaz.
-4. Compatibilidad con archivos y dispositivos existentes.
-5. Riesgo de latencia, errores musicales o pérdida de grabaciones.
-6. Coste de mantenimiento y pruebas.
-7. Posibilidad de implementarla de forma opcional y no intrusiva.
+- [x] **v1.0.8**
+  - Corrección de salida de audio MIDI en teclados físicos: eliminación de comandos invasivos `Local Control` (CC 122) al conectar instrumentos por USB.
+  - Icono oficial de aplicación (`elytesia-icon.png`) integrado en la barra de título superior y en la barra de tareas de Windows.
+  - Resolución de bloqueo crítico de arranque (bucle al 95%) con persistencia de ventana puramente nativa en Compose.
+  - Micro-interacciones de puntero fluido (`PointerIcon.Hand`) en los menús desplegables de configuración de teclado e instrumentos.
+  - Proporciones adaptativas refinadas para modales informativos y de actualización en PC y dispositivos móviles.
 
-## Plantilla para nuevas propuestas
+- [x] **v1.0.7**
+  - **Modo Práctica por Mano**: Ejercitación aislada e independiente de mano izquierda (notas graves), mano derecha (notas agudas) o ambas manos simultáneamente (🎹 / 🫲 / 🫱).
+  - **Persistencia Automática de Canciones Importadas**: Almacenamiento local persistente (`state.txt`) de canciones añadidas por el usuario entre inicios de aplicación.
+  - **Visualización Diferenciada por Mano**: Motor de temas dinámicos con diferenciación tonal para la mano izquierda (color secundario) y derecha (color primario).
+  - **Práctica por Secciones (Bucle A-B)**: Marcado con notación intuitiva (`📍 A: Inicio` / `📌 B: Fin`) para la repetición continua de fragmentos de la canción.
+  - **Optimizaciones de UI y Navegación Táctil**: Botón de importación MIDI de ancho completo (`fillMaxWidth`), barra lateral scrolleable con pie de página fijado abajo en modo vertical, y chips de dificultad scrolleables sin saltos de línea.
+  - **Estandarización de Templates del Ecosistema**: Sincronización completa de reglas locales (`.agents/rules/`) alineadas a `Docs`.
 
-```markdown
-### Nombre de la propuesta
+- [x] **v1.0.6**
+  - Estandarización modular de la arquitectura del proyecto alineada estrictamente a `folder_structure.md`.
+  - Optimización móvil táctil para orientación horizontal (landscape) con barra compacta en 1 sola fila y reducción de teclado a 95.dp.
+  - Persistencia total de canción cargada y estados de reproducción entre rotaciones de pantalla (`rememberSaveable`).
+  - Rediseño de controles de BPM y Transposición con botones uniformes y diálogos modales emergentes ergonómicos (`BpmAdjusterDialog` y `TransposeAdjusterDialog`).
+  - Iconos adaptativos nativos Android de 2 capas (`mipmap-anydpi-v26/ic_launcher.xml` e `ic_launcher_round.xml`) con fondo sólido `#0F172A` y sin discos blancos.
+  - Restauración y visibilidad permanente del botón para importar archivos MIDI.
 
-- Estado: Idea
-- Problema que resuelve:
-- Usuario o situación beneficiada:
-- Funcionamiento esperado:
-- Plataformas: Windows / Android / ambas
-- Cambios de interfaz necesarios:
-- Datos MIDI implicados:
-- Riesgos o dudas:
-- Criterio para considerarla terminada:
-```
-
-## Fuera de alcance por ahora
-
-- Sustituir una estación de trabajo de audio profesional completa.
-- Edición multipista avanzada comparable con un DAW.
-- Sincronización en la nube obligatoria.
-- Funciones que requieran conexión permanente para practicar localmente.
+- [x] **v1.0.0 – v1.0.5**
+  - Motor inicial de síntesis MIDI multiplataforma (Kotlin Multiplatform + Compose Desktop JVM / Android).
+  - Piano Roll visual con cascada de notas en tiempo real y teclado interactivo multitáctil con zoom por octavas.
+  - Detección y soporte de dispositivos MIDI USB nativos.
+  - Catálogo de canciones demo organizadas por dificultad (Fácil, Intermedio, Avanzado).
+  - Sistema de temas visuales (Material 3 Expressive, Neón, Clásico, Bosque, Medianoche) y efectos de estela.
+  - Sistema de auto-actualización silenciosa desde GitHub Releases y centro de feedback integrado.

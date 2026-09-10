@@ -49,7 +49,10 @@ $manifest | Set-Content (Join-Path $packageDir 'AppxManifest.xml') -Encoding utf
 
 $assetsDir = Join-Path $packageDir 'Assets'
 New-Item $assetsDir -ItemType Directory -Force | Out-Null
-$sourceIcon = Join-Path $root 'assets\branding\elytesia-icon-1024.png'
+$sourceIcon = Join-Path $root 'assets\branding\icons\icon-transparent.png'
+if (-not (Test-Path -LiteralPath $sourceIcon)) {
+    throw "No se encontró el icono canónico transparente en '$sourceIcon'."
+}
 Add-Type -AssemblyName System.Drawing
 function Write-Logo([string]$Name, [int]$Width, [int]$Height) {
     $source = [System.Drawing.Image]::FromFile($sourceIcon)

@@ -5,21 +5,23 @@ Android, construido con Kotlin y Compose Multiplatform. Muestra las notas como
 barras descendentes sobre un teclado, permite controlar la reproducción y
 puede trabajar con un teclado MIDI físico en Windows.
 
-![Icono de Ely-Tesia](icon/icon.png)
+![Icono de Ely-Tesia](assets/branding/icons/icon-transparent.png)
+
+La organización del icono y sus derivados sigue el [Asset Organization Standard](../Docs/global/architecture/asset-organization-standard.md). La fuente canónica es `assets/branding/icons/icon-transparent.png`; los recursos de Compose, Android y MSIX son derivados y no deben editarse manualmente.
 
 ## 📸 Capturas de Pantalla
 
 | Biblioteca | Instrumentos |
 | :---: | :---: |
-| ![Biblioteca MIDI](screenshots/library.png) | ![Instrumentos](screenshots/instruments.png) |
+| ![Biblioteca MIDI](docs/screenshots/library.png) | ![Instrumentos](docs/screenshots/instruments.png) |
 
 | Configuración | Temas |
 | :---: | :---: |
-| ![Configuración](screenshots/settings.png) | ![Temas](screenshots/themes.png) |
+| ![Configuración](docs/screenshots/settings.png) | ![Temas](docs/screenshots/themes.png) |
 
 | Reproductor | Acerca de |
 | :---: | :---: |
-| ![Reproductor](screenshots/player.png) | ![Acerca de](screenshots/about.png) |
+| ![Reproductor](docs/screenshots/player.png) | ![Acerca de](docs/screenshots/about.png) |
 
 ## Funciones de la versión 1.0.5
 

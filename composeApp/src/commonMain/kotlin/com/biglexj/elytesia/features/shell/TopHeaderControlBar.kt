@@ -18,16 +18,25 @@ import com.biglexj.elytesia.theme.ElyGreen
 import com.biglexj.elytesia.theme.ElyThemeDefinition
 import com.biglexj.elytesia.theme.TextContrast
 
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+
 @Composable
 fun TopHeaderControlBar(
     loadedSong: Song?,
-    currentTimeMs: Long,
+    currentTimeMsProvider: () -> Long,
     activeTheme: ElyThemeDefinition,
     isSidebarOpen: Boolean,
     onToggleSidebar: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val colors = MaterialTheme.colorScheme
+    val durationMs = loadedSong?.durationMs ?: 0L
+    val totalFormatted = remember(durationMs) { formatMs(durationMs) }
+    val currentFormatted by remember(currentTimeMsProvider) {
+        derivedStateOf { formatMs(currentTimeMsProvider()) }
+    }
 
     Row(
         modifier = modifier
@@ -62,9 +71,6 @@ fun TopHeaderControlBar(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            val durationMs = loadedSong?.durationMs ?: 0L
-            val currentFormatted = formatMs(currentTimeMs)
-            val totalFormatted = formatMs(durationMs)
             Text(
                 text = "$currentFormatted / $totalFormatted",
                 color = TextContrast,
@@ -100,3 +106,20 @@ private fun formatMs(timeMs: Long): String {
     val seconds = totalSeconds % 60
     return "${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}"
 }
+
+@Composable
+fun TopHeaderControlBar(
+    loadedSong: Song?,
+    currentTimeMs: Long,
+    activeTheme: ElyThemeDefinition,
+    isSidebarOpen: Boolean,
+    onToggleSidebar: () -> Unit,
+    modifier: Modifier = Modifier
+) = TopHeaderControlBar(
+    loadedSong = loadedSong,
+    currentTimeMsProvider = { currentTimeMs },
+    activeTheme = activeTheme,
+    isSidebarOpen = isSidebarOpen,
+    onToggleSidebar = onToggleSidebar,
+    modifier = modifier
+)

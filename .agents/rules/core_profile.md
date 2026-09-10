@@ -15,28 +15,27 @@ trigger: always_on
 Antes de aplicar la Documentación Core, completar este perfil con el alcance real del proyecto y consultar únicamente:
 
 1. Las reglas globales pertinentes.
-2. El tipo principal en `Core-Docs/types`.
-3. Cada plataforma distribuida en `Core-Docs/platforms`.
-4. El stack utilizado en `Core-Docs/stacks`.
-5. Las funciones realmente adoptadas en `Core-Docs/features`.
+2. El tipo principal en `Docs/types`.
+3. Cada plataforma distribuida en `Docs/platforms`.
+4. El stack utilizado en `Docs/stacks`.
+5. Las funciones realmente adoptadas en `Docs/features`.
 
 No aplicar una capacidad por semejanza. Instancia única, bandeja, autoactualización, instalador, IA y otras funciones deben figurar expresamente como activas.
 
 ## Documentos Core seleccionados
 
-- `Core-Docs/global/` (Agents, architecture, design, documentation, quality, releases, security)
-- `Core-Docs/types/multiplatform/`
-- `Core-Docs/types/desktop/`
-- `Core-Docs/types/mobile/`
-- `Core-Docs/platforms/windows/`
-- `Core-Docs/platforms/android/`
-- `Core-Docs/stacks/kotlin-multiplatform/`
-- `Core-Docs/features/design-system/`
-- `Core-Docs/features/auto-updater/`
-- `Core-Docs/features/feedback-center/`
-- `Core-Docs/features/installer/`
+- `Docs/global/` (Agents, architecture, design, documentation, quality, releases, security)
+- `Docs/types/multiplatform/`
+- `Docs/types/desktop/`
+- `Docs/types/mobile/`
+- `Docs/platforms/windows/`
+- `Docs/platforms/android/`
+- `Docs/stacks/kotlin-multiplatform/`
+- `Docs/features/design-system/`
+- `Docs/features/auto-updater/`
+- `Docs/features/feedback-center/`
+- `Docs/features/installer/`
 
 ## Excepciones locales
 
 - **Multi-Instancia Permitida (Desktop JVM)**: No aplica bloqueo de instancia única (`single-instance lock`). Se permite la ejecución simultánea de múltiples instancias independientes para comparar o reproducir distintos archivos MIDI.
-
