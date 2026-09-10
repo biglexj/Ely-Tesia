@@ -8,15 +8,15 @@
     "dev:desktop": "gradlew.bat :composeApp:run",
     "dev:android": "gradlew.bat :composeApp:installDebug",
     "test": "gradlew.bat :composeApp:desktopTest",
-    "build": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/build-release.ps1 -LocalOnly",
+    "build": "powershell -NoProfile -ExecutionPolicy Bypass -File ./build-release.ps1 local",
     "build:desktop": "gradlew.bat :composeApp:packageExe",
     "build:android": "gradlew.bat :composeApp:assembleRelease",
-    "build:local": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/build-release.ps1 -LocalOnly",
-    "release:local": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/build-release.ps1 -LocalOnly",
-    "release:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/build-release.ps1 -SkipAndroid -LocalOnly",
-    "release:android": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/build-release.ps1 -SkipWindows -LocalOnly",
-    "release": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/build-release.ps1",
-    "release:publish": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/build-release.ps1"
+    "build:local": "powershell -NoProfile -ExecutionPolicy Bypass -File ./build-release.ps1 local",
+    "release:local": "powershell -NoProfile -ExecutionPolicy Bypass -File ./build-release.ps1 local",
+    "release:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File ./build-release.ps1 local -SkipAndroid",
+    "release:android": "powershell -NoProfile -ExecutionPolicy Bypass -File ./build-release.ps1 local -SkipWindows",
+    "release": "powershell -NoProfile -ExecutionPolicy Bypass -File ./build-release.ps1",
+    "release:publish": "powershell -NoProfile -ExecutionPolicy Bypass -File ./build-release.ps1"
   },
   "keywords": [
     "midi",

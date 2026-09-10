@@ -173,3 +173,34 @@ function Assert-SignedArtifact {
         throw "La firma digital de '$Path' no es válida o no corresponde al firmante esperado '$Publisher'."
     }
 }
+
+<#
+.SYNOPSIS
+Calcula el hash SHA-256 en minúsculas de un archivo de manera universal e indestructible.
+.PARAMETER Path
+Ruta al archivo.
+#>
+function Get-FileSha256 {
+    param([Parameter(Mandatory)] [string]$Path)
+
+    if (Get-Command Get-FileHash -ErrorAction SilentlyContinue) {
+        return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
+    }
+
+    Import-Module Microsoft.PowerShell.Utility -ErrorAction SilentlyContinue
+    if (Get-Command Get-FileHash -ErrorAction SilentlyContinue) {
+        return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
+    }
+
+    # Fallback determinista usando .NET BCL directamente (indestructible en cualquier PowerShell/entorno)
+    $hasher = [System.Security.Cryptography.SHA256]::Create()
+    $stream = [System.IO.File]::OpenRead($Path)
+    try {
+        $bytes = $hasher.ComputeHash($stream)
+        return (-join ($bytes | ForEach-Object { "{0:x2}" -f $_ }))
+    } finally {
+        $stream.Dispose()
+        $hasher.Dispose()
+    }
+}
+

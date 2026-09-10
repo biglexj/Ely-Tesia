@@ -201,8 +201,9 @@ if (-not $SkipAndroid) {
 
 # Generar Checksums SHA-256
 $artifacts = Get-ChildItem -LiteralPath $releaseDir -File | Where-Object Name -ne "SHA256SUMS.txt"
-$artifacts | Get-FileHash -Algorithm SHA256 | ForEach-Object {
-    "{0}  {1}" -f $_.Hash.ToLowerInvariant(), (Split-Path $_.Path -Leaf)
+$artifacts | ForEach-Object {
+    $sha256 = Get-FileSha256 -Path $_.FullName
+    "{0}  {1}" -f $sha256, $_.Name
 } | Set-Content -LiteralPath "$releaseDir\SHA256SUMS.txt" -Encoding UTF8
 
 Write-Host "  Artefactos generados:" -ForegroundColor Gray
