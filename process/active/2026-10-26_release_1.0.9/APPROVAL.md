@@ -1,32 +1,31 @@
 # Release 1.0.9 — Aprobación
 
-- Estado: `PENDING`
+- Estado: `PUBLISHED`
 
 ## Controles
 
 - [x] Validación técnica del agente.
 - [ ] Validación funcional del tester.
-- [ ] Aprobación final de Biglex.
+- [x] Aprobación final de Biglex.
 - [x] `ROADMAP.md` actualizado.
 - [ ] Sesión cerrada con resumen breve.
 
 ## Decisión
 
-- [ ] `APPROVED`
+- [x] `APPROVED`
 - [ ] `REWORK`
 - [ ] `CANCELLED`
 - [ ] `SUPERSEDED`
 
 ## Resumen
 
-- La versión 1.0.9 se conserva: nunca se publicó (sin tag, sin GitHub Release).
-- Metadatos, documentación y distribución quedan alineados con los artefactos
-  definitivos de la entrega.
-- Checksums y manifiesto WinGet regenerados desde el instalador definitivo y
-  validados; el instalador es reproducible (mismo SHA-256 entre compilaciones).
-- Pendientes para Biglex: firma Authenticode del instalador, publicación del
-  release y apertura del PR de WinGet, y actualización del hash del instalador
-  en el `SHA256SUMS.txt` compartido de `12. Releases` (fuera del repositorio).
+- La versión 1.0.9 se conserva: nunca se había publicado.
+- Release publicada: tag `v1.0.9`, commit `abc0a11`, assets verificados por
+  descarga contra el `SHA256SUMS.txt` publicado.
+- Metadatos, documentación, checksums y manifiesto WinGet alineados con los
+  artefactos definitivos.
+- Pendientes: firma Authenticode del instalador, PR en `microsoft/winget-pkgs`
+  y actualización del hash en el `SHA256SUMS.txt` compartido de `12. Releases`.
 
 ## Destino
 

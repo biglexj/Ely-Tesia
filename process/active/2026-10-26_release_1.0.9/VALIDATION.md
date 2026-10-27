@@ -107,6 +107,27 @@
       release: la instalación silenciosa usa `/VERYSILENT /SUPPRESSMSGBOXES
       /NORESTART`.
 
+### Publicación
+
+- [x] V20 — Agente — Release publicada en GitHub: tag `v1.0.9`, commit
+      `abc0a11`, release "Ely-Tesia 1.0.9" con tres assets
+      (`ElyTesia-Setup-1.0.9.exe`, `ElyTesia-Android-1.0.9.apk`,
+      `SHA256SUMS.txt`). Esperado: release pública y sin borrador.
+      Resultado: correcto
+      (https://github.com/biglexj/Ely-Tesia/releases/tag/v1.0.9).
+- [x] V21 — Agente — Descarga de los artefactos publicados y contraste de sus
+      hashes contra el `SHA256SUMS.txt` publicado. Esperado: coincidencia
+      exacta. Resultado: correcto.
+      - `ElyTesia-Setup-1.0.9.exe` →
+        `1a486266e3c5315b829708c16cc4fc3acc9c36145e5336f203163fab9e3462e1`
+      - `ElyTesia-Android-1.0.9.apk` →
+        `b7784f84d4c525c0a9a46d63a89496787325f980165a50f5aca7c2fd4c48c306`
+- [x] V22 — Agente — `InstallerUrl` del manifiesto WinGet contra el artefacto
+      publicado. Esperado: descarga accesible. Resultado: correcto
+      (HTTP 200).
+- [x] V23 — Agente — `InstallerSha256` del manifiesto WinGet frente al hash del
+      instalador publicado. Esperado: cadena idéntica. Resultado: correcto.
+
 ## Registro de fallos
 
 - Fallo técnico → crear o reabrir una tarea.
