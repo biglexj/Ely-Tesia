@@ -8,7 +8,6 @@ Plan de trabajo, objetivos de producto y hoja de ruta estratégica del proyecto.
 
 ## 🔴 Pendientes activos
 
-- [ ] **Clasificación Automática de Dificultad para Canciones Importadas**: Motor `DifficultyAnalyzer.kt` para evaluar y categorizar archivos MIDI importados (`FACIL`, `INTERMEDIO`, `AVANZADO`) basándose en BPM, densidad de notas por segundo, polifonía máxima, rango tonal y varianza rítmica.
 - [ ] **Gestión Fina de Pistas y Canales MIDI**: Selector visual para silenciar, reproducir en solitario u ocultar pistas específicas, con asignación manual de manos y control de volumen individual por pista.
 - [ ] **Validación y Pruebas Físicas en Android**: Comprobación en múltiples dispositivos Android reales por ABI, calibración de latencia táctil y ajuste fino de buffers de audio por fabricante.
 - [ ] **Empaquetado y Distribución en Linux**: AppImage autocontenido x86_64 como distribución principal, paquetes `.deb` / `.rpm` y soporte de backend de audio PipeWire/PulseAudio y ALSA MIDI.
@@ -34,12 +33,13 @@ Plan de trabajo, objetivos de producto y hoja de ruta estratégica del proyecto.
 
 ## 🟢 Completado
 
-- [x] **v1.0.9** (2026-09-10)
+- [x] **v1.0.9** (2026-10-26)
   - Deslizador de línea de tiempo continuo en Canvas (`ElyTimelineSlider`): renderizado sub-píxel a 60/144 Hz con cero recomposiciones, respuesta táctil/arrastre inmediata y visualización del bucle A-B.
   - Estela y desenfoque de movimiento vertical (Motion Trail & Head Glow) en `PianoRollCanvas`: gradiente de velocidad difuminado y cabeza de impacto luminosa que eliminan el judder óptico estroboscópico.
   - Aislamiento de la fase de dibujo (`DrawScope`) en cascada y partículas sin mutaciones pesadas ni pausas del Garbage Collector.
   - Optimización del motor de reproducción con indexación temporal binaria de notas (O(log N)) y eliminación del doble retraso.
   - Pipeline de distribución oficial estandarizado conforme a Core-Docs (instalador `.exe` unificado en Windows y paquete `.apk` firmado en Android).
+  - Clasificación automática de dificultad para canciones importadas (`DifficultyAnalyzer`): motor heurístico multimétrico que evalúa BPM, densidad de notas por segundo, polifonía máxima, rango tonal y duración para categorizar la canción como `FACIL`, `INTERMEDIO` o `AVANZADO`.
 
 - [x] **v1.0.8**
   - Corrección de salida de audio MIDI en teclados físicos: eliminación de comandos invasivos `Local Control` (CC 122) al conectar instrumentos por USB.

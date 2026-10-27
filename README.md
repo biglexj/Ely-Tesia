@@ -1,4 +1,9 @@
-# Ely-Tesia
+# Ely-Tesia v1.0.9 — Deslizador Continuo en Canvas, Desenfoque de Movimiento & Renderizado a 144 FPS
+
+[![Versión](https://img.shields.io/badge/versi%C3%B3n-v1.0.9-5B4CFF?style=for-the-badge)](https://github.com/biglexj/Ely-Tesia/releases/latest)
+[![Windows](https://img.shields.io/badge/Windows-instalador%20.exe-0078D4?style=for-the-badge)](https://github.com/biglexj/Ely-Tesia/releases/latest)
+[![Android](https://img.shields.io/badge/Android-APK-3DDC84?style=for-the-badge)](https://github.com/biglexj/Ely-Tesia/releases/latest)
+[![Licencia](https://img.shields.io/badge/licencia-MIT-blue.svg)](LICENSE)
 
 Ely-Tesia es un visualizador y herramienta de práctica MIDI para Windows y
 Android, construido con Kotlin y Compose Multiplatform. Muestra las notas como
@@ -23,10 +28,11 @@ La organización del icono y sus derivados sigue el [Asset Organization Standard
 | :---: | :---: |
 | ![Reproductor](docs/screenshots/player.png) | ![Acerca de](docs/screenshots/about.png) |
 
-## Funciones de la versión 1.0.5
+## Funciones de la versión 1.0.9
 
 - Carga y visualización de archivos MIDI en Windows y Android.
-- Piano roll animado y teclado virtual interactivo.
+- Piano roll animado con estela y desenfoque de movimiento vertical.
+- Teclado virtual interactivo con mapa de notas por color.
 - Entrada desde teclados MIDI físicos en Windows y Android.
 - Compatibilidad con teclados Android mediante USB/OTG y Bluetooth MIDI.
 - Sintetizador interno de baja latencia en Windows y Android.
@@ -34,16 +40,18 @@ La organización del icono y sus derivados sigue el [Asset Organization Standard
 - Alternancia entre el sonido interno y el sonido local del teclado.
 - Reproducción, pausa, detención y reinicio.
 - Modo de espera para practicar las notas mostradas.
-- Control de BPM y velocidad de reproducción.
+- Modo práctica por mano: izquierda, derecha o ambas.
+- Práctica por secciones con bucle A-B.
+- Control de BPM, velocidad de reproducción y transposición de tono.
 - Metrónomo.
 - Reproducción en bucle con una pausa de cinco segundos.
-- Barra de progreso interactiva con posición actual y duración.
-- Mapeo del rango de teclas.
-- Biblioteca local persistente.
-- Grabación de interpretaciones desde el teclado MIDI o virtual.
+- Línea de tiempo continua en Canvas con arrastre inmediato y avance sub-píxel.
 - Cuenta previa configurable de cero, uno o dos compases.
-- Reproducción, renombrado y exportación de grabaciones MIDI.
-- Pedal sustain CC64 en entrada, grabación, reproducción y exportación.
+- Mapeo del rango de teclas.
+- Biblioteca local persistente entre sesiones.
+- Exportación de la canción cargada a archivo MIDI.
+- Clasificación automática de dificultad (fácil, intermedio, avanzado).
+- Pedal sustain CC64 en la entrada y en la reproducción.
 - Interfaz adaptada para escritorio y teléfonos.
 - Colores sincronizados por pista en barras, partículas y teclas.
 - Evaluación visual de notas correctas e incorrectas con tolerancia temporal.
@@ -53,32 +61,35 @@ La organización del icono y sus derivados sigue el [Asset Organization Standard
 - Colores configurables para manos, teclas blancas, negras/bemoles, pulsaciones,
   errores, estelas y partículas.
 - Material 3, movimiento expresivo y Dynamic Color opcional en Android 12+.
-- Pantalla activa durante reproducción y grabación en Android.
-- APK y AAB release firmados con identidad permanente.
+- Pantalla activa durante la reproducción en Android.
+- APK release firmado con identidad permanente.
 
 ## Descargas
 
-Los paquetes generados se guardan en la carpeta `release/`:
+Los paquetes oficiales se guardan en la carpeta `release/`:
 
-- `ElyTesia-Windows-1.0.5.msi`
-- `ElyTesia-Windows-1.0.5.exe`
-- `ElyTesia-Windows-1.0.5.msix`
-- `ElyTesia-Android-1.0.5.apk`
-- `ElyTesia-Android-1.0.5.aab`
-- `SHA256SUMS.txt`
+- `ElyTesia-Setup-1.0.9.exe` — instalador de Windows (Inno Setup, por usuario,
+  sin elevación).
+- `ElyTesia-Android-1.0.9.apk` — paquete de Android firmado.
+- `SHA256SUMS.txt` — hashes SHA-256 de los dos artefactos anteriores.
 
-La versión 1.0.5 inaugura la firma Android estable. Si el dispositivo tiene una
-versión anterior firmada como debug, Android pedirá desinstalarla una sola vez;
-desde 1.0.5 las actualizaciones directas conservarán la misma identidad.
+Desde la versión 1.0.9 la distribución de Windows es **exclusivamente** el
+instalador ejecutable `.exe`: los formatos MSI y MSIX quedan descartados. La
+migración desde el instalador MSI anterior está documentada en
+[`packaging/windows/MIGRATION.md`](packaging/windows/MIGRATION.md).
+
+La firma Android es estable desde la 1.0.5. Si el dispositivo tiene una versión
+anterior firmada como debug, Android pedirá desinstalarla una sola vez; desde
+entonces las actualizaciones directas conservan la misma identidad.
 
 ## Compilar el proyecto
 
 ### Requisitos
 
-- Windows 10 u 11 para generar el instalador MSI.
+- Windows 10 u 11 para generar el instalador con Inno Setup.
 - JDK 17 completo con `jpackage`.
 - Android SDK 34 para generar el APK.
-- Windows SDK con `MakeAppx.exe` y `SignTool.exe` para generar y firmar MSIX.
+- Inno Setup 6.7+ (`ISCC.exe`) para compilar el instalador de Windows.
 
 El script busca primero Microsoft OpenJDK 17 y utiliza el Android SDK definido
 en `ANDROID_HOME` o instalado en `%LOCALAPPDATA%\Android\Sdk`.
@@ -98,27 +109,30 @@ publicar actualizaciones compatibles.
 Desde PowerShell, en la raíz del proyecto:
 
 ```powershell
-.\build-release.ps1
+.\build-release.ps1 local -BuildInno
 ```
+
+`-BuildInno` es obligatorio para generar el instalador oficial de Windows: sin
+él se produce el EXE de jpackage heredado, que ya no es el artefacto publicado.
 
 Para generar solamente una plataforma:
 
 ```powershell
-.\build-release.ps1 -SkipAndroid
-.\build-release.ps1 -SkipWindows
-.\build-release.ps1 -SkipMsix
+.\build-release.ps1 local -BuildInno -SkipAndroid
+.\build-release.ps1 local -SkipWindows
 ```
 
-Para firmar el MSIX durante el build, proporciona el certificado sin guardar su
-contraseña en el repositorio:
+Para firmar el instalador con un certificado Authenticode, proporciona el
+certificado sin guardar su contraseña en el repositorio:
 
 ```powershell
 $password = Read-Host "Contraseña del certificado" -AsSecureString
-.\build-release.ps1 -MsixCertificate "C:\certificados\ElyTesia.pfx" -MsixCertificatePassword $password
+.\build-release.ps1 local -BuildInno -InstallerCertificate "C:\certificados\ElyTesia.pfx" -InstallerCertificatePassword $password
 ```
 
-Para Microsoft Store, el valor `Publisher` del manifiesto debe coincidir
-exactamente con la identidad asignada a Ely-Tesia en Partner Center.
+El manifiesto de WinGet se regenera en cada compilación con el `InstallerSha256`
+real del instalador, de modo que el hash nunca queda desfasado respecto al
+artefacto publicado.
 
 ### Ejecutar la aplicación de escritorio
 
@@ -151,8 +165,9 @@ La guía, las reglas, el esquema y tres ejemplos listos para modificar están en
 ## Estado del proyecto
 
 Ely-Tesia comenzó como un experimento y continúa en desarrollo. Entre las
-funciones previstas están el control avanzado de manos y pistas, el bucle de sección
-A-B, las estadísticas de práctica y una biblioteca comunitaria opcional.
+funciones previstas están el control avanzado de manos y pistas, la grabación de
+interpretaciones, las estadísticas de práctica y una biblioteca comunitaria
+opcional.
 
 Las funciones previstas y las ideas que todavía están en evaluación se
 mantienen en el [roadmap del proyecto](ROADMAP.md).

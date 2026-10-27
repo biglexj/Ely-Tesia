@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.10.0.schema.json
+
+PackageIdentifier: biglexj.ElyTesia
+PackageVersion: 1.0.9
+InstallerType: exe
+Scope: user
+InstallModes:
+  - interactive
+  - silent
+  - silentWithProgress
+UpgradeBehavior: install
+InstallerSwitches:
+  Silent: /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+  SilentWithProgress: /SILENT /SUPPRESSMSGBOXES /NORESTART
+ReleaseDate: 2026-10-26
+Installers:
+  - Architecture: x64
+    InstallerUrl: https://github.com/biglexj/Ely-Tesia/releases/download/v1.0.9/ElyTesia-Setup-1.0.9.exe
+    InstallerSha256: 1a486266e3c5315b829708c16cc4fc3acc9c36145e5336f203163fab9e3462e1
+ManifestType: installer
+ManifestVersion: 1.10.0

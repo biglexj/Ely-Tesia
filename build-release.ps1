@@ -15,6 +15,17 @@ param(
     [switch]$SkipWindows,
     [switch]$SkipAndroid,
     [switch]$SkipTests,
+    # Generar el instalador oficial de Windows con Inno Setup.
+    # Sin este flag el build produce el EXE de jpackage (formato legacy).
+    [switch]$BuildInno,
+    # Firmar el instalador EXE con un certificado Authenticode.
+    [string]$InstallerCertificate,
+    [securestring]$InstallerCertificatePassword,
+    # Mensaje del commit de release (la primera linea es el asunto).
+    [string]$CommitMessage,
+    # Flujo MSIX heredado: se acepta para no romper invocaciones previas, pero
+    # MSIX esta descartado como formato de distribucion oficial.
+    [switch]$SkipMsix,
     [Parameter(ValueFromRemainingArguments = $true)]
     [string[]]$RemainingArgs
 )
@@ -36,6 +47,11 @@ if ($LocalOnly) { $splat['LocalOnly'] = $true }
 if ($SkipWindows) { $splat['SkipWindows'] = $true }
 if ($SkipAndroid) { $splat['SkipAndroid'] = $true }
 if ($SkipTests) { $splat['SkipTests'] = $true }
+if ($BuildInno) { $splat['BuildInno'] = $true }
+if ($SkipMsix) { $splat['SkipMsix'] = $true }
+if ($InstallerCertificate) { $splat['InstallerCertificate'] = $InstallerCertificate }
+if ($InstallerCertificatePassword) { $splat['InstallerCertificatePassword'] = $InstallerCertificatePassword }
+if ($CommitMessage) { $splat['CommitMessage'] = $CommitMessage }
 
 & $scriptPath @splat @RemainingArgs
 exit $LASTEXITCODE

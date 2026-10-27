@@ -7,7 +7,7 @@
 > - Se incrementa `PATCH`, `MINOR` o `MAJOR` según el alcance real del cambio y compatibilidad, sin saltos forzados de versión basados únicamente en alcanzar un dígito 9.
 > - **Nombres de Dulces para Versiones Mayores:** Cada versión mayor (ej. `1.0.0`, `2.0.0`) debe nombrarse con un nombre de dulce o postre al estilo de las versiones clásicas de Android en orden alfabético (ej. `v1.0.0 (Apple Pie Update)`, `v2.0.0 (Banana Bread Update)`). Este nombre debe quedar reflejado de manera coordinada en el título de `README.md`, en `RELEASE_NOTES.md` al documentar la release, y en los archivos de configuración del proyecto.
 
-### 🚀 v1.0.9 — "Deslizador Continuo en Canvas, Desenfoque de Movimiento & Renderizado a 144 FPS" (patch) (10/09/2026)
+### 🚀 v1.0.9 — "Deslizador Continuo en Canvas, Desenfoque de Movimiento & Renderizado a 144 FPS" (patch) (26/10/2026)
 
 Esta actualización optimiza a fondo la fluidez perceptual y el rendimiento del motor de reproducción de Ely-Tesia, alcanzando **144 FPS nativos** en monitores de alta tasa de refresco y eliminando por completo cualquier salto discreto o micro-congelamiento durante la práctica musical.
 
@@ -18,6 +18,16 @@ En el Piano Roll, se restauró y perfeccionó el efecto de estela y desenfoque d
 Asimismo, se optimizó el motor determinista de reproducción desacoplando el reloj de fotogramas, aplicando un índice temporal binario para la consulta de notas activas y visibles (O(log N)) y reestructurando la física de partículas en bucles indexados directos para erradicar las pausas del recolector de basura (Garbage Collector).
 
 En cuanto a distribución, se estandarizó el empaquetado oficial conforme a la Documentación Core, distribuyendo de forma exclusiva el instalador ejecutable unificado `.exe` en Windows y el paquete `.apk` firmado para Android, respaldados por la suite de automatización `ReleaseTools.ps1`.
+
+- **Instalador de Windows modernizado (Inno Setup)**: El instalador EXE de Windows se genera ahora con la plantilla propia de Biglex en Inno Setup, con una pantalla única de entrada (presentación, ruta editable y botón principal), progreso y éxito nativos, tema claro/oscuro automático según Windows, esquinas nativas de Windows 11 e ícono centrado. La instalación es por usuario y sin elevación, la actualización se aplica en el mismo directorio (`%LOCALAPPDATA%\Programs\Ely-Tesia`) sin instalar en paralelo, y la coexistencia con el instalador anterior (jpackage + WiX/MSI y MSIX) queda documentada en `packaging\windows\MIGRATION.md`.
+
+**Archivos y Paquetes:**
+- `ElyTesia-Setup-1.0.9.exe`
+- `ElyTesia-Android-1.0.9.apk`
+- `SHA256SUMS.txt`
+
+> [!NOTE]
+> **Actualización e instalación:** Desde 1.0.9 la distribución de Windows es exclusivamente el instalador ejecutable `.exe`; los formatos MSI y MSIX quedan descartados. Los hashes SHA-256 de los dos artefactos se publican en `SHA256SUMS.txt`, y el manifiesto de WinGet se regenera en cada compilación con el hash real del instalador.
 
 ---
 

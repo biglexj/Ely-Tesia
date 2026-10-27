@@ -11,6 +11,9 @@ param(
     [string]$Version,
     # Archivo de notas de lanzamiento (por defecto RELEASE_MESSAGE.md)
     [string]$ReleaseNotesFile = "RELEASE_MESSAGE.md",
+    # Mensaje del commit de release (opcional). La primera linea es el
+    # asunto; el resto se anade como cuerpo.
+    [string]$CommitMessage = "",
     # Mensaje explícito del release en GitHub (opcional, sobrescribe ReleaseNotesFile)
     [string]$ReleaseNotes,
     # Omitir plataformas específicas
@@ -18,6 +21,11 @@ param(
     [switch]$SkipAndroid,
     [switch]$SkipMsix,
     [switch]$SkipTests,
+    # Generar tambien el instalador EXE de Inno Setup (plantilla Biglex Modern 2.0)
+    [switch]$BuildInno,
+    # Firmar el instalador EXE con un certificado Authenticode (opcional)
+    [string]$InstallerCertificate,
+    [securestring]$InstallerCertificatePassword,
     # Solo build local, sin git ni GitHub
     [switch]$LocalOnly,
     # Certificado MSIX opcional
@@ -55,10 +63,40 @@ if (-not $Version) {
         $Version = $currentVersion
         Write-Host "Modo local: compilando versión actual: $Version" -ForegroundColor Cyan
     } else {
-        $parts = $currentVersion -split '\.'
-        $parts[-1] = [int]$parts[-1] + 1
-        $Version = $parts -join '.'
-        Write-Host "Versión detectada automáticamente: $Version" -ForegroundColor Cyan
+        # Si la version actual AUN NO se publico, se conserva: una entrega que
+        # nunca llego a publicarse no debe generar un salto de version. Solo
+        # se incrementa cuando la version vigente ya existe como tag o como
+        # GitHub Release.
+        $currentTag = "v$currentVersion"
+        $alreadyPublished = $false
+        $oldErrorAction = $ErrorActionPreference
+        $ErrorActionPreference = "SilentlyContinue"
+        try {
+            & git rev-parse --quiet --verify "refs/tags/$currentTag" *> $null
+            if ($LASTEXITCODE -eq 0) {
+                $alreadyPublished = $true
+            } else {
+                $remoteTags = & git ls-remote --tags origin "refs/tags/$currentTag" 2>$null
+                if ($LASTEXITCODE -eq 0 -and $remoteTags) {
+                    $alreadyPublished = $true
+                } else {
+                    & gh release view $currentTag --repo $repository *> $null
+                    if ($LASTEXITCODE -eq 0) { $alreadyPublished = $true }
+                }
+            }
+        } finally {
+            $ErrorActionPreference = $oldErrorAction
+        }
+
+        if ($alreadyPublished) {
+            $parts = $currentVersion -split '\.'
+            $parts[-1] = [int]$parts[-1] + 1
+            $Version = $parts -join '.'
+            Write-Host "La versión $currentVersion ya está publicada: se incrementa a $Version" -ForegroundColor Cyan
+        } else {
+            $Version = $currentVersion
+            Write-Host "La versión $currentVersion todavía no se publicó: se conserva" -ForegroundColor Cyan
+        }
     }
 }
 
@@ -95,21 +133,29 @@ $versionContent = $versionContent `
     -replace '(?m)^(elytesia\.versionCode=)\d+\r?$', "`${1}$newCode" `
     -replace '(?m)^(elytesia\.versionName=)[\d.]+\r?$', "`${1}$Version"
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-[System.IO.File]::WriteAllText($versionFile, $versionContent, $utf8NoBom)
+# Solo se escribe si el contenido cambia: reescribirlo sin cambios actualiza su
+# fecha y el control de frescura da por obsoleta la imagen de la app compilada.
+$versionChanged = Set-FileContentIfChanged -Path $versionFile -Content $versionContent -Encoding $utf8NoBom
 
 # Sincronizar UpdateChecker en desktopMain y androidMain
 $desktopChecker = Join-Path $root "composeApp\src\desktopMain\kotlin\com\biglexj\elytesia\update\UpdateChecker.kt"
 if (Test-Path -LiteralPath $desktopChecker) {
     $dcContent = Get-Content -LiteralPath $desktopChecker -Raw -Encoding UTF8
     $dcContent = $dcContent -replace '(?m)actual val currentVersion: String = "[\d.]+"', "actual val currentVersion: String = `"$Version`""
-    [System.IO.File]::WriteAllText($desktopChecker, $dcContent, $utf8NoBom)
+    $versionChanged = (Set-FileContentIfChanged -Path $desktopChecker -Content $dcContent -Encoding $utf8NoBom) -or $versionChanged
 }
 
 $androidChecker = Join-Path $root "composeApp\src\androidMain\kotlin\com\biglexj\elytesia\update\UpdateChecker.kt"
 if (Test-Path -LiteralPath $androidChecker) {
     $acContent = Get-Content -LiteralPath $androidChecker -Raw -Encoding UTF8
     $acContent = $acContent -replace '(?m)actual val currentVersion: String = "[\d.]+"', "actual val currentVersion: String = `"$Version`""
-    [System.IO.File]::WriteAllText($androidChecker, $acContent, $utf8NoBom)
+    $versionChanged = (Set-FileContentIfChanged -Path $androidChecker -Content $acContent -Encoding $utf8NoBom) -or $versionChanged
+}
+
+if ($versionChanged) {
+    Write-Host "  Ficheros de version actualizados." -ForegroundColor Gray
+} else {
+    Write-Host "  La version ya estaba sincronizada: no se tocan los ficheros de origen." -ForegroundColor DarkGray
 }
 
 Write-Host "  versionCode = $newCode  |  versionName = $Version" -ForegroundColor Gray
@@ -164,11 +210,51 @@ Write-Host ""
 Write-Host "[3/7] Copiando y verificando artefactos en release/..." -ForegroundColor Yellow
 if (-not $SkipWindows) {
     $exeSrc = "$root\composeApp\build\compose\binaries\main\exe\ElyTesia-$Version.exe"
-    
+
     if (-not (Test-Path -LiteralPath $exeSrc)) {
         throw "No se generó el instalador ejecutable de Windows esperado: $exeSrc"
     }
-    Copy-Item -LiteralPath $exeSrc -Destination "$releaseDir\ElyTesia-Windows-$Version.exe"
+    # El EXE de jpackage es el formato legacy. Cuando el instalador oficial de
+    # Inno Setup esta activo no se copia a release/: la distribucion oficial de
+    # 1.0.9 en adelante es EXCLUSIVAMENTE el instalador unificado + el APK, de
+    # modo que release/ contenga solo los artefactos que se publican y el
+    # SHA256SUMS.txt cubra exactamente ese conjunto.
+    if (-not $BuildInno) {
+        Copy-Item -LiteralPath $exeSrc -Destination "$releaseDir\ElyTesia-Windows-$Version.exe"
+    }
+}
+
+# Instalador EXE de Inno Setup (plantilla compartida Biglex Modern 2.0).
+# Se genera aparte del EXE de jpackage: el artefacto tiene otro nombre
+# (ElyTesia-Setup-X.Y.Z.exe) para no colisionar con ElyTesia-Windows-X.Y.Z.exe.
+# Genera ademas el manifiesto de winget con el InstallerSha256 REAL del EXE
+# compilado: asi el hash nunca queda desfasado respecto al artefacto publicado.
+if ($BuildInno -and -not $SkipWindows) {
+    Write-Host ""
+    Write-Host "[3b/7] Generando el instalador EXE de Inno Setup..." -ForegroundColor Yellow
+    $installerArgs = @(
+        "-NoProfile",
+        "-File", (Join-Path $root "scripts\packaging\Build-Installer.ps1"),
+        "-Version", $Version,
+        "-SkipBuild",
+        "-OutputDirectory", $releaseDir,
+        "-EmitWingetManifest"
+    )
+    if ($InstallerCertificate) {
+        $installerArgs += @("-CertificatePath", $InstallerCertificate)
+    }
+    # La contrasena viaja por variable de entorno: no queda expuesta en la
+    # linea de ordenes del proceso hijo.
+    $previousCertPassword = $env:ELYTESIA_INSTALLER_CERT_PASSWORD
+    try {
+        if ($InstallerCertificatePassword) {
+            $env:ELYTESIA_INSTALLER_CERT_PASSWORD = [System.Net.NetworkCredential]::new('', $InstallerCertificatePassword).Password
+        }
+        Invoke-Checked "powershell" $installerArgs
+    }
+    finally {
+        $env:ELYTESIA_INSTALLER_CERT_PASSWORD = $previousCertPassword
+    }
 }
 
 if (-not $SkipAndroid) {
@@ -200,11 +286,20 @@ if (-not $SkipAndroid) {
 }
 
 # Generar Checksums SHA-256
-$artifacts = Get-ChildItem -LiteralPath $releaseDir -File | Where-Object Name -ne "SHA256SUMS.txt"
-$artifacts | ForEach-Object {
+# Solo sobre los artefactos previstos para publicacion, con formato UTF-8 sin
+# BOM y saltos LF: es el unico formato que `sha256sum -c` acepta en Linux y
+# macOS. Con CRLF + BOM (lo que produce Set-Content en Windows) la
+# verificacion falla en esos sistemas.
+$artifacts = Get-ChildItem -LiteralPath $releaseDir -File | Where-Object Name -ne "SHA256SUMS.txt" | Sort-Object Name
+$checksumLines = $artifacts | ForEach-Object {
     $sha256 = Get-FileSha256 -Path $_.FullName
     "{0}  {1}" -f $sha256, $_.Name
-} | Set-Content -LiteralPath "$releaseDir\SHA256SUMS.txt" -Encoding UTF8
+}
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllText(
+    "$releaseDir\SHA256SUMS.txt",
+    (($checksumLines -join "`n") + "`n"),
+    $utf8NoBom)
 
 Write-Host "  Artefactos generados:" -ForegroundColor Gray
 Get-ChildItem -LiteralPath $releaseDir -File | ForEach-Object { Write-Host "    $($_.Name)" -ForegroundColor Gray }
@@ -221,7 +316,15 @@ if ($LocalOnly) {
 Write-Host ""
 Write-Host "[4/7] Creando commit de release..." -ForegroundColor Yellow
 Invoke-Checked git @("add", "-A")
-& git commit -m "chore: bump version to $Version"
+# Mensaje del commit de release. El cuerpo puede pasarse con -CommitMessage;
+# si no, se usa un resumen del contenido real de la entrega. El trailer de
+# atribucion se anade siempre que el commit lo crea este pipeline.
+$commitSubject = if ($CommitMessage) { ($CommitMessage -split "`n")[0].Trim() } else { "release: preparar la versión $Version" }
+$commitBody = if ($CommitMessage) { ($CommitMessage -split "`n" | Select-Object -Skip 1) -join "`n" } else { "" }
+$commitText = $commitSubject
+if ($commitBody.Trim()) { $commitText = $commitSubject + "`n`n" + $commitBody.Trim() }
+$commitText = $commitText + "`n`nCo-Authored-By: Claude Code <noreply@anthropic.com>"
+& git commit -m $commitText
 if ($LASTEXITCODE -gt 1) { throw "git commit falló (exit $LASTEXITCODE)" }
 
 Write-Host ""

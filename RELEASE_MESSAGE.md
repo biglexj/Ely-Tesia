@@ -10,6 +10,19 @@ Llega **Ely-Tesia v1.0.9**, una actualización enfocada en la fluidez perceptual
 - 🎹 **Estela y Desenfoque de Movimiento (Motion Trail & Head Glow)**: Las notas en el Piano Roll cuentan con un gradiente vertical de velocidad suave y cabeza de impacto luminosa, erradicando el parpadeo estroboscópico retiniano en piezas rápidas como *La Bamba*.
 - ⚡ **Rendimiento Máximo y Cero Congelamientos**: Desacople total de la fase de dibujo (`DrawScope`) respecto a la composición global de Compose, optimización de indexación temporal de notas (O(log N)) y física de partículas directa sin pausas del Garbage Collector.
 - 📦 **Distribución Oficial Estandarizada**: Distribución centrada exclusivamente en el instalador ejecutable unificado `.exe` para Windows y el paquete `.apk` firmado para Android conforme a las directrices del ecosistema.
+- 🛠️ **Instalador de Windows modernizado (Inno Setup)**: Pantalla única de entrada, progreso y éxito nativos, tema claro/oscuro automático según Windows, instalación por usuario sin elevación y actualización en el mismo directorio sin instalación paralela.
+
+### 📥 Descargas
+
+| Plataforma | Archivo |
+| --- | --- |
+| Windows | `ElyTesia-Setup-1.0.9.exe` |
+| Android | `ElyTesia-Android-1.0.9.apk` |
+| Verificación | `SHA256SUMS.txt` |
+
+Desde esta versión, la distribución de Windows es **exclusivamente** el instalador
+ejecutable `.exe`: los formatos MSI y MSIX quedan descartados. Los hashes
+SHA-256 de ambos artefactos se publican en `SHA256SUMS.txt`.
 
 ---
 
