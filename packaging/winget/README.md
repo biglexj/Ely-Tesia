@@ -12,12 +12,16 @@ Microsoft Store debe copiarse desde Partner Center.
 
 | Versión | Ruta | Tipo de instalador | Estado |
 | --- | --- | --- | --- |
-| 1.0.1 | `manifests/b/biglexj/ElyTesia/1.0.1/` | `wix` (MSI) | Histórico, publicado |
-| 1.0.2 | `manifests/b/biglexj/ElyTesia/1.0.2/` | `wix` (MSI) | Histórico, publicado |
-| 1.0.9 | `manifests/b/biglexj/ElyTesia/1.0.9/` | `exe` (Inno Setup) | Pendiente de publicar |
+| 1.0.1 | `manifests/b/biglexj/ElyTesia/1.0.1/` | `wix` (MSI) | Histórico, publicado en upstream |
+| 1.0.2 | `manifests/b/biglexj/ElyTesia/1.0.2/` | `wix` (MSI) | Histórico, nunca llegó a publicarse en upstream |
+| 1.0.9 | `manifests/b/biglexj/ElyTesia/1.0.9/` | `exe` (Inno Setup) | Release publicada; PR a upstream pendiente |
 
-Las versiones 1.0.1 y 1.0.2 apuntan al `.msi` de jpackage + WiX publicado en GitHub
-Releases. La 1.0.9 cambia al instalador ejecutable `.exe`.
+En `microsoft/winget-pkgs` la versión publicada más reciente es la **1.0.8**
+(tipo `wix`, MSI). Su manifiesto no está en este repositorio porque se
+generó fuera del flujo de build.
+
+Las versiones 1.0.1, 1.0.2 y 1.0.8 apuntan al `.msi` de jpackage + WiX
+publicado en GitHub Releases. La 1.0.9 cambia al instalador ejecutable `.exe`.
 
 ## Cambio de tipo a `exe` (plantilla Biglex Modern 2.0)
 

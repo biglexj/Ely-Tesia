@@ -16,7 +16,7 @@ cada instalador y cómo desinstalar el paquete anterior.
 | Script de build del instalador | `scripts\packaging\Build-Installer.ps1` | **Activo** |
 | Plantilla MSIX | `packaging\windows\AppxManifest.xml.template` | Se conserva |
 | Script de build MSIX | `scripts\build-msix.ps1` | Se conserva |
-| Manifiestos winget | `packaging\winget\manifests\b\biglexj\ElyTesia\` | 1.0.1 y 1.0.2 (tipo `wix`), 1.0.9 (tipo `exe`) |
+| Manifiestos winget | `packaging\winget\manifests\b\biglexj\ElyTesia\` | 1.0.1, 1.0.2 y 1.0.9 (en este repositorio); en upstream `microsoft/winget-pkgs` constan 1.0.1 y 1.0.8 (tipo `wix`) |
 | Paquete de firma Android | `keystore.properties`, `scripts\setup-android-signing.ps1` | Sin cambios |
 
 Nada de esto afecta a Android, macOS ni Linux: el flujo `scripts\build-release.ps1`
@@ -143,7 +143,8 @@ y solo se retira el MSI cuando el EXE esté disponible para todo el mundo.
 - `1.0.1/` y `1.0.2/` → `InstallerType: wix`, con `ProductCode` propio y la URL
   del `.msi` publicado en GitHub Releases.
 - `1.0.9/` → `InstallerType: exe`, con el `InstallerSha256` real del instalador
-  de Inno Setup. **Generado pero pendiente de publicar**.
+  de Inno Setup. **Release publicada en GitHub; PR a `microsoft/winget-pkgs`
+  pendiente**.
 
 El manifiesto de tipo `exe` lo genera el script de build con
 `scripts\packaging\Build-Installer.ps1 -EmitWingetManifest`, que escribe
